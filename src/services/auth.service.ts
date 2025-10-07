@@ -11,7 +11,7 @@ export class AuthService {
         if (!userExist) {
             throw new AppError("Invalid Credentials", 404, "AUTH_MOUDLE")
         }
-        const isPasswordMatched = userExist.comparePassword(password)
+        const isPasswordMatched = await userExist.comparePassword(password)
         if (!isPasswordMatched) {
             throw new AppError("Invalid Credentials", 404, "AUTH_MODULE")
         }
@@ -36,5 +36,17 @@ export class AuthService {
             throw new AppError("User not Found", 404, "AUTH_MODULE")
         }
         return user
+    }
+    public changePassword = async (userId: mongoose.Types.ObjectId, oldPassword: string, newPassword: string): Promise<void> => {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new AppError("User not Found", 404, "AUTH_MODULE")
+        }
+        const isOldPasswordCorrect = await user.comparePassword(oldPassword);
+        if (!isOldPasswordCorrect) {
+            throw new AppError("Old Password doesnot match", 400, "AUTh_MODULE")
+        }
+        user.password = newPassword;
+        await user.save()
     }
 }

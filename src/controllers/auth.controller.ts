@@ -38,9 +38,27 @@ export default class AuthController {
             next(error)
         }
     }
+    public changePassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const { oldPassword, newPassword } = req.body
+            await this.authService.changePassword(userId, oldPassword, newPassword)
+            res.status(200).json({message:"Password changed successfully"})
+        } catch (error) {
+            next(error)
+        }
+
+    }
+
+    public forgotPassword = async(req:Request, res:Response, next:NextFunction) {
+        try {
+            
+        } catch (error) {
+            next(error)
+        }
+     }
+
     // static async resetPassword() { }
-    // static async forgotPassword() { }
-    // static async changePassword() { }
 
 
 }

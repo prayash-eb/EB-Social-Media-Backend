@@ -12,7 +12,7 @@ const authController = new AuthController(authService)
 authRouter.post("/register", authController.register)
 authRouter.post("/login", authController.login)
 authRouter.get('/profile', Authenticate, authController.profile)
-authRouter.post("/change-password")
+authRouter.post("/change-password", Authenticate, authController.changePassword)
 
 
 
