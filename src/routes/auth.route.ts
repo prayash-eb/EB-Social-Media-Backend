@@ -13,10 +13,7 @@ authRouter.post("/register", authController.register)
 authRouter.post("/login", authController.login)
 authRouter.get('/profile', Authenticate, authController.profile)
 authRouter.post("/change-password", Authenticate, authController.changePassword)
-
-
-
-// authRouter.post("/reset-password")
-// authRouter.post("/forgot-password")
+authRouter.post('/forgot-password',authController.forgotPassword)
+authRouter.post("/reset-password", authController.resetPassword)
 
 export default authRouter
