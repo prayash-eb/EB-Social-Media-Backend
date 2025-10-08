@@ -2,7 +2,12 @@ import mongoose from "mongoose";
 
 export default async function connectDB() {
     try {
-        const DB_URL = process.env.DATABASE_URL!
+        // for local instance
+        const DB_URL = process.env.DATABASE_URL_LOCAL!
+        
+        // for remote instance 
+        // const DB_URL = process.env.DATABASE_URL_REMOTE!
+
         mongoose.connection.on("connected", () => {
             console.log("Database Connected");
         })
