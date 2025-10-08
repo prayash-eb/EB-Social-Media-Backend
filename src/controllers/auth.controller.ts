@@ -52,7 +52,9 @@ export default class AuthController {
     public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email } = req.body;
-            const resetPasswordLink = await this.authService.resetPasswordLink(email)
+            const DOMAIN_URL = `${req.protocol}://${req.headers.host}${req.originalUrl}`
+            console.log(DOMAIN_URL);
+            const resetPasswordLink = await this.authService.resetPasswordLink(DOMAIN_URL, email)
             res.status(200).json({ resetPasswordLink })
         } catch (error) {
             next(error)

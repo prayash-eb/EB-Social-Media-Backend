@@ -51,7 +51,7 @@ export class AuthService {
         user.password = newPassword;
         await user.save()
     }
-    public resetPasswordLink = async (email: string): Promise<string> => {
+    public resetPasswordLink = async (DOMAIN_URL:string,email: string): Promise<string> => {
         const user = await User.findOne({ email });
         if (!user) {
             throw new AppError("User not Found", 400, "AUTH_MODULE")
@@ -66,7 +66,7 @@ export class AuthService {
         user.resetPasswordTokenExpiry = new Date(Date.now() + 5 * 60 * 60 * 1000);
         await user.save()
 
-        return `${process.env.BASE_URL}/api/v1/auth/reset-password?token=${resetPasswordToken}`
+        return `${DOMAIN_URL}/reset-password?token=${resetPasswordToken}`
 
     }
     public resetPassword = async (newPassword: string, resetToken: string): Promise<void> => {
