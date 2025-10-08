@@ -2,7 +2,6 @@
 import { type NextFunction, type Request, type Response } from "express"
 import type { AuthService } from "../services/auth.service.js"
 
-
 export default class AuthController {
     constructor(private authService: AuthService) { }
 
@@ -43,22 +42,33 @@ export default class AuthController {
             const userId = req.user?.id!;
             const { oldPassword, newPassword } = req.body
             await this.authService.changePassword(userId, oldPassword, newPassword)
-            res.status(200).json({message:"Password changed successfully"})
+            res.status(200).json({ message: "Password changed successfully" })
         } catch (error) {
             next(error)
         }
 
     }
 
-    public forgotPassword = async(req:Request, res:Response, next:NextFunction) {
+    public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            
+            const { email } = req.body;
+            const resetPasswordLink = await this.authService.resetPasswordLink(email)
+            res.status(200).json({ resetPasswordLink })
         } catch (error) {
             next(error)
         }
-     }
+    }
 
-    // static async resetPassword() { }
+    public resetPassword = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const { newPassword } = req.body
+            const resetToken = req.query.token as string
+            await this.authService.resetPassword(newPassword, resetToken)
+            res.status(200).json({ message: "Password Reset Successfully" })
+        } catch (error) {
+            next(error)
+        }
+    }
 
 
 }
