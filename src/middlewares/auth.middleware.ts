@@ -31,7 +31,7 @@ export const Authenticate = (req: Request, res: Response, next: NextFunction) =>
     } catch (error) {
         console.log(`[AUTHENTICATION FAILURE]: ${error}`);
         if (error instanceof jwt.JsonWebTokenError) {
-            res.status(400).json({ message: "Invalid JWT", error })
+            res.status(401).json({ message: "Invalid JWT", error })
         } else {
             next(error)
         }
