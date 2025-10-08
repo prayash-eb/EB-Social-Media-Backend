@@ -16,14 +16,22 @@ const userSchema = new Schema<IUserModel>({
     password: {
         type: String,
         required: true
+    },
+    resetPasswordToken: {
+        type: String,
+    },
+    resetPasswordTokenExpiry: {
+        type: Date
     }
 }, {
     timestamps: true,
     toJSON: {
-        transform: function (doc:IUserModel, ret:any) {
+        transform: function (doc: IUserModel, ret: any) {
             ret.id = ret._id
             delete ret._id
             delete ret.password
+            delete ret.resetPasswordToken
+            delete ret.resetPasswordTokenExpiry
             delete ret.__v
         }
     }
