@@ -53,7 +53,6 @@ export default class AuthController {
         try {
             const { email } = req.body;
             const DOMAIN_URL = `${req.protocol}://${req.headers.host}${req.originalUrl}`
-            console.log(DOMAIN_URL);
             const resetPasswordLink = await this.authService.resetPasswordLink(DOMAIN_URL, email)
             res.status(200).json({ resetPasswordLink })
         } catch (error) {
