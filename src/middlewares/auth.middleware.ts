@@ -19,11 +19,11 @@ export const Authenticate = (req: Request, res: Response, next: NextFunction) =>
     try {
         const authHeader = req.headers.authorization
         if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            res.status(401).json({ message: "Unauthorized User" })
+            return res.status(401).json({ message: "Unauthorized User" })
         }
         const accessToken = authHeader!.split(" ")[1];
         if (!accessToken) {
-            res.status(401).json({ message: "Unauthorized User" })
+            return res.status(401).json({ message: "Unauthorized User" })
         }
         const decoded = jwt.verify(accessToken!, process.env.JWT_SECRET!)
         req.user = decoded as JWTPayload
@@ -35,6 +35,5 @@ export const Authenticate = (req: Request, res: Response, next: NextFunction) =>
         } else {
             next(error)
         }
-
     }
 }
