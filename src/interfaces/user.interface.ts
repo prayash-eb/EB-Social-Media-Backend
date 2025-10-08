@@ -13,6 +13,8 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
+    resetPasswordToken: string | null,
+    resetPasswordTokenExpiry: Date | null
 }
 
 export interface IUserModel extends IUser {
