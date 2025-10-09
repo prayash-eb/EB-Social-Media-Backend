@@ -1,22 +1,65 @@
 import mongoose, { Model, model, Schema } from "mongoose";
-import type { IUser, IUserModel } from "../interfaces/user.interface.js";
+import type { IUser, IUserModel, IAcademicQualification } from "../interfaces/user.interface.js";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
+
+
 
 const userSchema = new Schema<IUserModel>({
     name: {
         type: String,
+        minLength: [3, "Name must be at least 2 characters"],
+        trim: true,
         required: true
     },
     email: {
         type: String,
-        required: true,
+        required: [true, "Email is required"],
+        trim: true,
         unique: true
     },
     password: {
         type: String,
+        minLength: [6, "Password must be at least 6 characters long"],
+        trim: true,
         required: true
     },
+    hobbies: {
+        type: [String],
+    },
+    // location.type = "Point"
+    location: {
+        type: {
+            type: String,
+            enum: ["Point"]
+        },
+        // two values in array,first is longitude and second is latitude
+        coordinates: {
+            type: [Number],
+            required: true,
+            validate: {
+                validator: (value: number[]) => {
+                    return value.length === 2 && value[0]! >= -180 && value[0]! <= 180 && value[1]! >= -90 && value[1]! <= 90;
+                },
+                message: (prop) => `${prop.value} is not a valid coordinate`
+            }
+        },
+    },
+    dateOfBirth: {
+        type: String,
+        trim: true
+    },
+    academicQualifications: [{
+        passedYear: {
+            type: Number,
+            required: true
+        },
+        degreeName: {
+            type: String,
+            required: true,
+            trim: true
+        }
+    }],
     resetPasswordToken: {
         type: String,
     },
@@ -59,6 +102,9 @@ userSchema.pre("save", async function (next) {
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
+
+
+
 
 const User = model<IUserModel>("User", userSchema)
 
