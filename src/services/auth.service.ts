@@ -1,11 +1,12 @@
 import User from "../models/user.model.js";
-import type { IUser, UserLoginDTO, UserRegisterDTO } from "../interfaces/user.interface.js";
+import type { IUser } from "../interfaces/user.interface.js";
+import type { UserLoginDTO, UserRegisterDTO } from "../dtos/user.dto.js";
 import { AppError } from "../libs/customError.js";
 import type mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
 
-export class AuthService {
+export default class AuthService {
 
     public login = async (credentials: UserLoginDTO): Promise<string> => {
         const { email, password } = credentials;
@@ -51,7 +52,7 @@ export class AuthService {
         user.password = newPassword;
         await user.save()
     }
-    public resetPasswordLink = async (DOMAIN_URL:string,email: string): Promise<string> => {
+    public resetPasswordLink = async (DOMAIN_URL: string, email: string): Promise<string> => {
         const user = await User.findOne({ email });
         if (!user) {
             throw new AppError("User not Found", 400, "AUTH_MODULE")

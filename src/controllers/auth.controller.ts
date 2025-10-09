@@ -1,6 +1,6 @@
 
 import { type NextFunction, type Request, type Response } from "express"
-import type { AuthService } from "../services/auth.service.js"
+import AuthService from "../services/auth.service.js"
 
 export default class AuthController {
     constructor(private authService: AuthService) { }

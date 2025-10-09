@@ -27,3 +27,9 @@ export const userResetPasswordSchema = z.object({
 export const userResetPasswordQuerySchema = z.object({
     token: z.string().nonempty()
 })
+
+export const userLocationSchema = z.object({
+    longitude: z.number().min(-180).max(180),
+    latitude: z.number().min(-90).max(90)
+
+})
