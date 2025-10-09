@@ -1,10 +1,11 @@
 import type { NextFunction, Request, Response } from "express"
-import { ZodError, ZodObject } from "zod"
+import { ZodArray, ZodError, ZodObject } from "zod"
 
 export const validateBody = (schema: ZodObject<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
         try {
-            schema.parse(req.body)
+            const parsedData = schema.parse(req.body)
+            req.body = parsedData
             next()
         } catch (error) {
             if (error instanceof ZodError) {
@@ -18,7 +19,7 @@ export const validateBody = (schema: ZodObject<any>) => {
 export const validateQuery = (schema: ZodObject<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
         try {
-            schema.parse(req.query)
+            schema.safeParse(req.query)
             next()
         } catch (error) {
             if (error instanceof ZodError) {

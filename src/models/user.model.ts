@@ -3,8 +3,6 @@ import type { IUser, IUserModel, IAcademicQualification } from "../interfaces/us
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
 
-
-
 const userSchema = new Schema<IUserModel>({
     name: {
         type: String,
@@ -36,9 +34,11 @@ const userSchema = new Schema<IUserModel>({
         // two values in array,first is longitude and second is latitude
         coordinates: {
             type: [Number],
-            required: true,
             validate: {
-                validator: (value: number[]) => {
+                validator: (value: number[] | []) => {
+                    if (!value.length) {
+                        return true
+                    }
                     return value.length === 2 && value[0]! >= -180 && value[0]! <= 180 && value[1]! >= -90 && value[1]! <= 90;
                 },
                 message: (prop) => `${prop.value} is not a valid coordinate`
@@ -50,6 +50,9 @@ const userSchema = new Schema<IUserModel>({
         trim: true
     },
     academicQualifications: [{
+        id: {
+            type: mongoose.Types.ObjectId
+        },
         passedYear: {
             type: Number,
             required: true
@@ -65,7 +68,7 @@ const userSchema = new Schema<IUserModel>({
     },
     resetPasswordTokenExpiry: {
         type: Date
-    }
+    },
 }, {
     timestamps: true,
     toJSON: {
@@ -79,6 +82,9 @@ const userSchema = new Schema<IUserModel>({
         }
     }
 })
+
+// add location index
+userSchema.index({ location: "2dsphere" })
 
 userSchema.methods.createJWT = function () {
     const JWT_SECRET = process.env.JWT_SECRET;

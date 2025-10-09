@@ -28,7 +28,6 @@ export default class AuthController {
     public profile = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            console.log(userId);
             const user = await this.authService.getUser(userId!)
             res.status(200).json({
                 user

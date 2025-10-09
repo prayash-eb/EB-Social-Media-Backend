@@ -82,8 +82,8 @@ export default class AuthService {
         }
 
         // clear the token & expiry time as well
-        user.resetPasswordToken = null;
-        user.resetPasswordTokenExpiry = null;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordTokenExpiry = undefined;
 
         // automatically hashed using pre hook on save
         user.password = newPassword;

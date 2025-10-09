@@ -1,6 +1,8 @@
 import type { Request, NextFunction, Response } from "express"
 import jwt from "jsonwebtoken"
 import type mongoose from "mongoose"
+import User from "../models/user.model.js"
+import { AppError } from "../libs/customError.js"
 
 export interface JWTPayload extends jwt.JwtPayload {
     id: mongoose.Types.ObjectId,
@@ -15,7 +17,7 @@ declare global {
     }
 }
 
-export const Authenticate = (req: Request, res: Response, next: NextFunction) => {
+export const Authenticate = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization
         if (!authHeader || !authHeader.startsWith("Bearer ")) {

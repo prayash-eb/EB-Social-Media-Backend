@@ -1,35 +1,34 @@
+import mongoose from "mongoose";
 import z from "zod";
 
-export const userLoginSchema = z.object({
-    email: z.email(),
-    password: z.string().min(5)
-})
-
-export const userRegisterSchema = z.object({
-    name: z.string().min(3),
-    email: z.email(),
-    password: z.string().min(5)
-})
-
-export const userChangePasswordSchema = z.object({
-    oldPassword: z.string().min(5),
-    newPassword: z.string().min(5)
-})
-
-export const userForgotPasswordSchema = z.object({
-    email: z.email()
-})
-
-export const userResetPasswordSchema = z.object({
-    newPassword: z.string().min(5)
-})
-
-export const userResetPasswordQuerySchema = z.object({
-    token: z.string().nonempty()
-})
+const currentYear = new Date().getFullYear()
 
 export const userLocationSchema = z.object({
     longitude: z.number().min(-180).max(180),
     latitude: z.number().min(-90).max(90)
 
 })
+export const userHobbySchema = z.object({
+    hobbies: z.array(z.string().toLowerCase().trim()).min(1)
+})
+
+export const userBirthdayDateSchema = z.object({
+    dateOfBirth: z.string().trim()
+})
+
+export const userAcademicEntrySchema = z.object({
+    id: mongoose.Types.ObjectId,
+    passedYear: z.number().int("Year must be a whole number").max(currentYear, "Passed year cannot be in future"),
+    degreeName: z.string().trim().toLowerCase().min(2, "Degree name must be at least 2 characters").max(50, "Degree name mustnot be greater than 50 characters")
+})
+
+export const userAcademicsSchema = z.object({
+    academicQualifications: z.array(userAcademicEntrySchema).min(1, "Please provide at least one academic qualification.")
+})
+
+export type UserLocationDTO = z.infer<typeof userLocationSchema>;
+export type UserHobbyDTO = z.infer<typeof userHobbySchema>;
+export type UserBirthdayDateDTO = z.infer<typeof userBirthdayDateSchema>;
+export type UserAcademicEntryDTO = z.infer<typeof userAcademicEntrySchema>;
+export type UserAcademicsDTO = z.infer<typeof userAcademicsSchema>;
+
