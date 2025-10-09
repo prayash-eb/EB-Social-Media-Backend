@@ -11,6 +11,7 @@ This is a Node.js backend project for a social media application. It uses TypeSc
 - Database integration (configured in `src/configs/database.ts`)
 
 ## Project Structure
+
 ```
 src/
   app.ts                # Main app setup
@@ -18,7 +19,10 @@ src/
   configs/
     database.ts         # Database configuration
   controllers/
-    auth.controller.ts  # Auth logic
+    auth.controller.ts  # Auth controller logic
+    user.controller.ts  # User controller logic
+  dtos/
+    user.dto.ts         # Data Transfer Objects (DTOs)
   interfaces/
     user.interface.ts   # User type definitions
   libs/
@@ -31,8 +35,10 @@ src/
     user.model.ts       # User model
   routes/
     auth.route.ts       # Auth routes
+    user.route.ts       # User routes
   services/
     auth.service.ts     # Auth service logic
+    user.service.ts     # User service logic
   validators/
     user.validator.ts   # User input validation
 ```
@@ -80,4 +86,7 @@ src/
 - `POST /api/v1/auth/change-password` — Change password (authenticated)
 - `POST /api/v1/auth/forgot-password` — Request password reset
 - `POST /api/v1/auth/reset-password?token=some_token` — Reset password with token
+
+### User Endpoints
+- `POST /api/v1/user/update-location` — Update user's location (authenticated)
 
