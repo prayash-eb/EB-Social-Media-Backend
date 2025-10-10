@@ -1,14 +1,12 @@
-import type mongoose from "mongoose";
 import type { Document } from "mongoose";
 
 export interface ILocation {
     type: "Point",
     coordinates: [number, number]
-    index: "2dsphere"
 }
 
 export interface IAcademicQualification {
-    id: mongoose.Types.ObjectId;
+    id: string;
     passedYear: number;
     degreeName: string;
 }

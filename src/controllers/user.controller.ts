@@ -29,8 +29,7 @@ export default class UserController {
     public updateUserHobby = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            const { hobbies } = req.body
-            await this.userService.updateHobby(userId!, hobbies)
+            await this.userService.updateHobby(userId!, req.body)
             res.status(200).json({ message: "Hobbies Added Successfully" })
         } catch (error) {
             next(error)
@@ -39,8 +38,7 @@ export default class UserController {
     public deleteUserHobby = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            const { hobbies } = req.body
-            await this.userService.deleteHobby(userId!, hobbies)
+            await this.userService.deleteHobby(userId!, req.body)
             res.status(200).json({ message: "Hobbies Delete Successfully" })
         } catch (error) {
             next(error)
@@ -50,8 +48,7 @@ export default class UserController {
     public updateUserDOB = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            const { dateOfBirth } = req.body
-            await this.userService.updateDateofBirth(userId!, dateOfBirth)
+            await this.userService.updateDateofBirth(userId!, req.body)
             res.status(200).json({ message: "BirthDay Date Updated Successfully" })
         } catch (error) {
             next(error)
@@ -60,7 +57,6 @@ export default class UserController {
     public deleteUserDOB = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            const { dateOfBirth } = req.body
             await this.userService.deleteDateofBirth(userId!)
             res.status(200).json({ message: "BirthDay Date removed Successfully" })
         } catch (error) {
@@ -70,23 +66,20 @@ export default class UserController {
     public addOrUpdateUserAcademics = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id
-            const { academicQualifications } = req.body 
-            await this.userService.addOrUpdateAcademics(userId!, academicQualifications)
+            await this.userService.addOrUpdateAcademics(userId!, req.body)
             res.status(200).json({ message: "Academics updated Successfully" })
         } catch (error) {
             next(error)
         }
     }
-    // public deleteUserAcademics = async (req: Request, res: Response, next: NextFunction) => {
-    //     try {
-    //         const userId = req.user?.id
-    //         const academicId = req.query.id;
-
-    //         await this.userService.deleteAcademics(userId!, academicId)
-    //         res.status(200).json({ message: "Academics removed Successfully" })
-    //     } catch (error) {
-    //         next(error)
-    //     }
-    // }
+    public deleteUserAcademics = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id;
+            await this.userService.deleteAcademics(userId!,req.body)
+            res.status(200).json({ message: "Academics removed Successfully" })
+        } catch (error) {
+            next(error)
+        }
+    }
 
 }

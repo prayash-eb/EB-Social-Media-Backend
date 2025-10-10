@@ -51,7 +51,7 @@ const userSchema = new Schema<IUserModel>({
     },
     academicQualifications: [{
         id: {
-            type: mongoose.Types.ObjectId
+            type: String
         },
         passedYear: {
             type: Number,
@@ -61,7 +61,8 @@ const userSchema = new Schema<IUserModel>({
             type: String,
             required: true,
             trim: true
-        }
+        },
+        _id:false
     }],
     resetPasswordToken: {
         type: String,

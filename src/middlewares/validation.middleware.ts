@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express"
-import { ZodArray, ZodError, ZodObject } from "zod"
+import { ZodError, ZodObject } from "zod"
 
 export const validateBody = (schema: ZodObject<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
@@ -8,11 +8,12 @@ export const validateBody = (schema: ZodObject<any>) => {
             req.body = parsedData
             next()
         } catch (error) {
+            console.log(error);
             if (error instanceof ZodError) {
                 const errors = error.issues.map((e) => ({ path: e.path, message: e.message }))
-                return res.status(400).json({ messae: "Validation Error", errors })
+                return res.status(400).json({ messae: "Input Validation Error", errors })
             }
-            next(error)
+            return res.status(400).json({message:"Input validation Error"})
         }
     }
 }

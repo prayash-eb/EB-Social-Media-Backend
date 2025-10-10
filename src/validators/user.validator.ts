@@ -17,7 +17,7 @@ export const userBirthdayDateSchema = z.object({
 })
 
 export const userAcademicEntrySchema = z.object({
-    id: mongoose.Types.ObjectId,
+    id: z.string().optional(),
     passedYear: z.number().int("Year must be a whole number").max(currentYear, "Passed year cannot be in future"),
     degreeName: z.string().trim().toLowerCase().min(2, "Degree name must be at least 2 characters").max(50, "Degree name mustnot be greater than 50 characters")
 })
@@ -26,9 +26,15 @@ export const userAcademicsSchema = z.object({
     academicQualifications: z.array(userAcademicEntrySchema).min(1, "Please provide at least one academic qualification.")
 })
 
+export const userAcademicsDeleteSchema = z.object({
+    ids: z.array(z.string()).min(1, "Please provide at least one id.")
+})
+
+
 export type UserLocationDTO = z.infer<typeof userLocationSchema>;
 export type UserHobbyDTO = z.infer<typeof userHobbySchema>;
 export type UserBirthdayDateDTO = z.infer<typeof userBirthdayDateSchema>;
 export type UserAcademicEntryDTO = z.infer<typeof userAcademicEntrySchema>;
 export type UserAcademicsDTO = z.infer<typeof userAcademicsSchema>;
+export type UserAcademicDeleteDTO = z.infer<typeof userAcademicsDeleteSchema>
 

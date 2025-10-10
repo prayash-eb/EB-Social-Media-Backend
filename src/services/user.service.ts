@@ -1,8 +1,9 @@
 import User from "../models/user.model.js";
 import { AppError } from "../libs/customError.js";
 import type mongoose from "mongoose";
+import { v4 as uuidv4 } from "uuid";
 
-import type { UserAcademicEntryDTO, UserAcademicsDTO, UserBirthdayDateDTO, UserHobbyDTO, UserLocationDTO } from "../validators/user.validator.js";
+import type { UserAcademicDeleteDTO, UserAcademicEntryDTO, UserAcademicsDTO, UserBirthdayDateDTO, UserHobbyDTO, UserLocationDTO } from "../validators/user.validator.js";
 
 export default class UserService {
 
@@ -17,8 +18,7 @@ export default class UserService {
     public updateLocation = async (userId: mongoose.Types.ObjectId, data: UserLocationDTO): Promise<void> => {
         const user = await this.checkUser(userId)
         user.location.type = "Point";
-        user.location.coordinates[0] = data.longitude;
-        user.location.coordinates[1] = data.latitude
+        user.location.coordinates = [data.longitude, data.latitude]
         await user.save()
     }
     public removeLocation = async (userId: mongoose.Types.ObjectId): Promise<void> => {
@@ -33,7 +33,8 @@ export default class UserService {
     }
     public updateHobby = async (userId: mongoose.Types.ObjectId, data: UserHobbyDTO): Promise<void> => {
         const user = await this.checkUser(userId)
-        const existingHobbies = new Set([...user.hobbies])
+        const existingHobbies = new Set(user.hobbies)
+        console.log(data);
 
         const uniqueHobbies = data.hobbies.filter((hobby) => {
             if (!existingHobbies.has(hobby)) {
@@ -69,6 +70,7 @@ export default class UserService {
     public deleteDateofBirth = async (userId: mongoose.Types.ObjectId) => {
         const user = await this.checkUser(userId);
         user.dateOfBirth = undefined
+        await user.save()
     }
 
     public addOrUpdateAcademics = async (userId: mongoose.Types.ObjectId, data: UserAcademicsDTO) => {
@@ -85,7 +87,7 @@ export default class UserService {
             } else {
                 // Add new academic with generated id
                 user.academicQualifications.push({
-                    id: new (require("mongoose").Types.ObjectId)().toString(),
+                    id: uuidv4().toString(),
                     degreeName: newAcademic.degreeName,
                     passedYear: newAcademic.passedYear
                 });
@@ -93,9 +95,14 @@ export default class UserService {
         });
         await user.save();
     }
-    public deleteAcademics = async (userId: mongoose.Types.ObjectId, academicId: string) => {
+    public deleteAcademics = async (userId: mongoose.Types.ObjectId, data: UserAcademicDeleteDTO) => {
         const user = await this.checkUser(userId);
         // perform filter on user.acdemicQualifications
+        const uniqueAcademicIds = new Set(data.ids);
+        console.log("Unique", uniqueAcademicIds);
+        const finalAcademics = user.academicQualifications.filter((academic) => !uniqueAcademicIds.has(academic.id))
+        console.log("Final", finalAcademics);
+        user.academicQualifications = finalAcademics
         await user.save();
     }
 

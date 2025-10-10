@@ -3,7 +3,7 @@ import UserController from "../controllers/user.controller.js";
 import UserService from "../services/user.service.js";
 import { Authenticate } from "../middlewares/auth.middleware.js";
 import { validateBody, validateQuery } from "../middlewares/validation.middleware.js";
-import { userAcademicsSchema, userBirthdayDateSchema, userHobbySchema, userLocationSchema } from "../validators/user.validator.js";
+import { userAcademicsDeleteSchema, userAcademicsSchema, userBirthdayDateSchema, userHobbySchema, userLocationSchema } from "../validators/user.validator.js";
 
 const userRouter: Router = Router()
 const userService = new UserService()
@@ -20,6 +20,6 @@ userRouter.post('/update-dob', Authenticate, validateBody(userBirthdayDateSchema
 userRouter.delete('/delete-dob', Authenticate, userController.deleteUserDOB)
 
 userRouter.post('/update-academics', Authenticate, validateBody(userAcademicsSchema), userController.addOrUpdateUserAcademics)
-// userRouter.delete('/delete-academics/:id', Authenticate, validateBody(userAcademicsSchema), userController.deleteUserAcademics)
+userRouter.delete('/delete-academics', Authenticate, validateBody(userAcademicsDeleteSchema), userController.deleteUserAcademics)
 
 export default userRouter
