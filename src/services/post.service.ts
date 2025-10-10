@@ -15,4 +15,16 @@ export default class PostService {
         }
         return post
     }
+
+    public editPost = async (userId: mongoose.Types.ObjectId, postId: string, updateData: Partial<IPost>): Promise<IPost | null> => {
+        const post = await Post.findOneAndUpdate(
+            { _id: postId, userId },
+            { $set: updateData },
+            { new: true }
+        );
+        if (!post) {
+            throw new AppError("Post not found or you are not authorized to edit this post", 404, "POST_MODULE");
+        }
+        return post;
+    }
 }

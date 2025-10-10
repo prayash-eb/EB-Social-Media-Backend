@@ -5,7 +5,7 @@ import type { CloudinaryRequestOptions } from "../middlewares/upload.middleware.
 export default class PostController {
     constructor(private postService: PostService) { }
 
-    public createPostController = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
+    public createUserPost = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
         try {
             const filePath = req.file?.path ? req.file?.path : (req.cloudinary?.secure_url)
             const postData = { image: filePath, ...req.body }
@@ -13,6 +13,25 @@ export default class PostController {
             res.status(201).json({ message: "Post created successfully", post })
         } catch (error) {
             next(error)
+        }
+    }
+    public editUserPost = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const postId = req.params.id;
+            if(!postId){
+                return res.status(400).json({message:"Please provide post id."})
+            }
+            const filePath = req.file?.path ? req.file?.path : req.cloudinary?.secure_url;
+            const updateData = { ...req.body };
+            if (filePath) {
+                updateData.image = filePath;
+            }
+            console.log(updateData);
+            const updatedPost = await this.postService.editPost(userId, postId, updateData);
+            res.status(200).json({ message: "Post updated successfully", post: updatedPost });
+        } catch (error) {
+            next(error);
         }
     }
 }

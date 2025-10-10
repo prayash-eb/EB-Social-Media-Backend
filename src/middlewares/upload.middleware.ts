@@ -62,17 +62,19 @@ export const createLocalImageUploader = (options?: LocalFileUploadOptions) => {
         storage,
         fileFilter,
         limits: { fileSize: maxFileSize }
-    })
+    }).single("image")
 
 }
 
+
 export const createRemoteImageUploader = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
     uploadBuffer.single("image")(req, res, (error) => {
+        if (!req.file) {
+            // No image uploaded, just continue
+            return next();
+        }
         if (error) {
             return next(error)
-        }
-        if (!req.file) {
-            return res.status(400).json({ message: "Please upload an image file" })
         }
         try {
             const fileStream = Readable.from(req.file.buffer)

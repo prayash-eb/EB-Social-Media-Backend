@@ -12,7 +12,6 @@ const postSchema = new Schema<IPost>({
     },
     image: {
         type: String,
-        required: true
     },
     userId: {
         type: mongoose.Schema.Types.ObjectId,
