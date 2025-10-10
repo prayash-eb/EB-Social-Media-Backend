@@ -7,7 +7,7 @@ export const errorHandler = (error: CustomError, req: Request, res: Response, ne
     const statusCode = error.statusCode || 500
     const message = error.message
     const errorName = error.name
-    console.log(`[ERROR_LOG]: ${errorName}-${message}`);
+    console.log(`[ERROR_LOG]: ${errorName}-${message}`, error);
 
     return res.status(statusCode).json({
         message,

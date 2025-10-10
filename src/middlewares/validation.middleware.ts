@@ -4,6 +4,9 @@ import { ZodError, ZodObject } from "zod"
 export const validateBody = (schema: ZodObject<any>) => {
     return (req: Request, res: Response, next: NextFunction) => {
         try {
+            if (req.is("multipart/form-data") && typeof req.body?.data === "string") {
+                req.body = JSON.parse(req.body?.data)
+            }
             const parsedData = schema.parse(req.body)
             req.body = parsedData
             next()
@@ -13,7 +16,7 @@ export const validateBody = (schema: ZodObject<any>) => {
                 const errors = error.issues.map((e) => ({ path: e.path, message: e.message }))
                 return res.status(400).json({ messae: "Input Validation Error", errors })
             }
-            return res.status(400).json({message:"Input validation Error"})
+            return res.status(400).json({ message: "Invalid Request Body" })
         }
     }
 }
@@ -31,3 +34,4 @@ export const validateQuery = (schema: ZodObject<any>) => {
         }
     }
 }
+
