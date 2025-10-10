@@ -1,5 +1,5 @@
-import mongoose, { Model, model, Schema } from "mongoose";
-import type { IUser, IUserModel, IAcademicQualification } from "../interfaces/user.interface.js";
+import { model, Schema } from "mongoose";
+import type { IUserModel } from "../interfaces/user.interface.js";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
 
@@ -62,7 +62,7 @@ const userSchema = new Schema<IUserModel>({
             required: true,
             trim: true
         },
-        _id:false
+        _id: false
     }],
     resetPasswordToken: {
         type: String,
@@ -109,8 +109,6 @@ userSchema.pre("save", async function (next) {
     this.password = await bcrypt.hash(this.password, 10)
     next()
 })
-
-
 
 
 const User = model<IUserModel>("User", userSchema)
