@@ -23,7 +23,7 @@ export default class PostService {
             { new: true }
         );
         if (!post) {
-            throw new AppError("Post not found or you are not authorized to edit this post", 404, "POST_MODULE");
+            throw new AppError("Post not found or Error while ", 404, "POST_MODULE");
         }
         return post;
     }
