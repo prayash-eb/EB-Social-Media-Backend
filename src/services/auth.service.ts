@@ -28,7 +28,7 @@ export default class AuthService {
         if (user) {
             throw new AppError("User with email already exists", 409, "AUTH_MODULE");
         }
-        const savedUser = await User.insertOne({
+        const savedUser = await User.create({
             name, email, password
         })
         return savedUser;

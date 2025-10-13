@@ -1,9 +1,10 @@
 import { Document, Types } from "mongoose";
 
 export interface IComment {
+    _id?:Types.ObjectId,
     commentorId: Types.ObjectId;
     comment: string;
-    createdAt?: Date;
+    createdAt: Date;
 }
 
 export interface IPost extends Document {

@@ -28,6 +28,11 @@ const postSchema = new Schema<IPost>({
     ]
 }, { timestamps: true });
 
+// Add compound index for efficient querying by userId and createdAt
+postSchema.index({ userId: 1, createdAt: -1 });
+// Add index for likes and comments if you frequently query them
+postSchema.index({ likes: 1 });
+postSchema.index({ "comments.commentorId": 1 });
 
 const Post = model<IPost>("Post", postSchema)
 export default Post

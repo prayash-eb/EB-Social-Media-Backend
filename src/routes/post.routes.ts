@@ -3,8 +3,8 @@ import { Router } from "express";
 import PostController from "../controllers/post.controller.js";
 import PostService from "../services/post.service.js";
 import { Authenticate } from "../middlewares/auth.middleware.js";
-import { validateBody } from "../middlewares/validation.middleware.js";
-import { createPostSchema, editPostSchema } from "../validators/post.validator.js";
+import { validateBody, validateParams, validateQuery } from "../middlewares/validation.middleware.js";
+import { createPostSchema, editPostSchema, postParamSchema, getPostsQuerySchema, commentParamSchema, deleteCommentParamSchema } from "../validators/post.validator.js";
 import { createLocalImageUploader, createRemoteImageUploader } from "../middlewares/upload.middleware.js";
 
 const postRouter = Router()
@@ -17,8 +17,16 @@ const remoteFileUploader = createRemoteImageUploader
 
 
 postRouter.post("/create", Authenticate, remoteFileUploader, validateBody(createPostSchema), postController.createUserPost)
-
-
 postRouter.post("/edit/:id", Authenticate, remoteFileUploader, validateBody(editPostSchema), postController.editUserPost)
+postRouter.delete("/delete/:id", Authenticate, validateParams(postParamSchema), postController.deleteUserPost)
+
+postRouter.get('/all', Authenticate, validateQuery(getPostsQuerySchema), postController.getUserPosts)
+postRouter.get("/:id", Authenticate, validateParams(postParamSchema), postController.getUserPost)
+
+postRouter.patch("/like/:id", Authenticate, validateParams(postParamSchema), postController.likePost)
+postRouter.patch("/comment/:id", Authenticate, validateParams(commentParamSchema), postController.commentPost)
+
+postRouter.delete('/delete-comment/:postId/:commentId', Authenticate, validateParams(deleteCommentParamSchema), postController.deleteComment)
+
 
 export default postRouter

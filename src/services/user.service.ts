@@ -34,7 +34,6 @@ export default class UserService {
     public updateHobby = async (userId: mongoose.Types.ObjectId, data: UserHobbyDTO): Promise<void> => {
         const user = await this.checkUser(userId)
         const existingHobbies = new Set(user.hobbies)
-        console.log(data);
 
         const uniqueHobbies = data.hobbies.filter((hobby) => {
             if (!existingHobbies.has(hobby)) {
@@ -99,9 +98,7 @@ export default class UserService {
         const user = await this.checkUser(userId);
         // perform filter on user.acdemicQualifications
         const uniqueAcademicIds = new Set(data.ids);
-        console.log("Unique", uniqueAcademicIds);
         const finalAcademics = user.academicQualifications.filter((academic) => !uniqueAcademicIds.has(academic.id))
-        console.log("Final", finalAcademics);
         user.academicQualifications = finalAcademics
         await user.save();
     }

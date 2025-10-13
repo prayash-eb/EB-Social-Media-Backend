@@ -1,4 +1,4 @@
-import { model, Schema } from "mongoose";
+import mongoose, { model, Schema } from "mongoose";
 import type { IUserModel } from "../interfaces/user.interface.js";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
@@ -64,6 +64,7 @@ const userSchema = new Schema<IUserModel>({
         },
         _id: false
     }],
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     resetPasswordToken: {
         type: String,
     },

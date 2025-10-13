@@ -15,12 +15,13 @@ export interface IUser extends Document {
     name: string;
     email: string;
     password: string;
-    hobbies: string[];
-    location: ILocation;
-    dateOfBirth: string | undefined;
-    academicQualifications: IAcademicQualification[];
-    resetPasswordToken: string | undefined;
-    resetPasswordTokenExpiry: Date | undefined;
+    hobbies?: string[];
+    location?: ILocation;
+    dateOfBirth?: string | undefined;
+    academicQualifications?: IAcademicQualification[];
+    posts?: [],
+    resetPasswordToken?: string | undefined;
+    resetPasswordTokenExpiry?: Date | undefined;
 }
 
 export interface IUserModel extends IUser {
