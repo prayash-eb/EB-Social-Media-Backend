@@ -1,4 +1,3 @@
-
 import { Router } from "express";
 import PostController from "../controllers/post.controller.js";
 import PostService from "../services/post.service.js";

@@ -4,10 +4,11 @@ import type mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
 import type { UserAcademicDeleteDTO, UserAcademicEntryDTO, UserAcademicsDTO, UserBirthdayDateDTO, UserHobbyDTO, UserLocationDTO } from "../validators/user.validator.js";
+import type { IUserModel } from "../interfaces/user.interface.js";
 
 export default class UserService {
 
-    private checkUser = async (userId: mongoose.Types.ObjectId) => {
+    private checkUser = async (userId: mongoose.Types.ObjectId):Promise<IUserModel> => {
         const user = await User.findById(userId)
         if (!user) {
             throw new AppError("User doesnot exist", 400, "USER_MODULE")
