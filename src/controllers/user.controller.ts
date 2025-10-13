@@ -2,9 +2,24 @@
 import { type NextFunction, type Request, type Response } from "express"
 import UserService from "../services/user.service.js"
 import type { UserLocationDTO } from "../dtos/user.dto.js"
+import User from "../models/user.model.js"
 
 export default class UserController {
     constructor(private userService: UserService) { }
+
+
+    // test controller for easy fetching for all users
+    public getUsers = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            if (process.env.NODE_ENV === "prod") {
+                return res.status(403).json({ message: "Unauthorized route" });
+            }
+            const users = await User.find();
+            res.status(200).json(users)
+        } catch (error) {
+            next(error)
+        }
+    }
 
     public updateUserLocation = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -75,7 +90,7 @@ export default class UserController {
     public deleteUserAcademics = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id;
-            await this.userService.deleteAcademics(userId!,req.body)
+            await this.userService.deleteAcademics(userId!, req.body)
             res.status(200).json({ message: "Academics removed Successfully" })
         } catch (error) {
             next(error)

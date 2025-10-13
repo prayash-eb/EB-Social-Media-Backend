@@ -10,6 +10,8 @@ const userService = new UserService()
 const userController = new UserController(userService)
 
 
+userRouter.get("/all",userController.getUsers)
+
 userRouter.post('/update-location', Authenticate, validateBody(userLocationSchema), userController.updateUserLocation)
 userRouter.delete('/remove-location', Authenticate, userController.removeUserLocation)
 
