@@ -7,43 +7,34 @@ import User from "../models/user.model.js";
 
 export default class PostService {
     public createPost = async (userId: mongoose.Types.ObjectId, data: CreatePostDTO): Promise<IPost> => {
-        // Start a session for transaction
-        const session = await Post.startSession();
-        let newPost: IPost[] | null = null;
+        let newPost: IPost | null = null;
 
-        try {
-            await session.withTransaction(async () => {
-                // Create the post
-                newPost = await Post.create([{
-                    userId,
-                    ...data
-                }], { session });
+        // Create the post
+        newPost = await Post.create({
+            userId,
+            ...data
+        });
 
-                if (!newPost || newPost.length === 0) {
-                    throw new AppError("Error while creating post", 400, "POST_MODULE");
-                }
-
-                // Update the user's posts array
-                const user = await User.findByIdAndUpdate(
-                    userId,
-                    { $push: { posts: newPost[0]?._id } },
-                    { session }
-                );
-
-                if (!user) {
-                    throw new AppError("User not found", 404, "POST_MODULE");
-                }
-            });
-
-            await session.endSession();
-            if (!newPost) {
-                throw new AppError("Error while creating post", 400, "POST_MODULE");
-            }
-            return newPost[0];
-        } catch (error) {
-            await session.endSession();
-            throw error;
+        if (!newPost) {
+            throw new AppError("Error while creating post", 400, "POST_MODULE");
         }
+
+        // Update the user's posts array
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { $push: { posts: newPost._id } },
+
+        );
+
+        if (!user) {
+            throw new AppError("User not found", 404, "POST_MODULE");
+        }
+
+        if (!newPost) {
+            throw new AppError("Error while creating post", 400, "POST_MODULE");
+        }
+
+        return newPost!;
     }
 
     public editPost = async (userId: mongoose.Types.ObjectId, postId: mongoose.Types.ObjectId, updateData: Partial<IPost>): Promise<IPost | null> => {

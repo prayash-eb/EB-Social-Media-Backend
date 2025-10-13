@@ -65,6 +65,9 @@ const userSchema = new Schema<IUserModel>({
         _id: false
     }],
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
+    followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    followings: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    
     resetPasswordToken: {
         type: String,
     },

@@ -1,3 +1,4 @@
+import type mongoose from "mongoose";
 import type { Document } from "mongoose";
 
 export interface ILocation {
@@ -20,6 +21,8 @@ export interface IUser extends Document {
     dateOfBirth: string | undefined;
     academicQualifications: IAcademicQualification[];
     posts: [],
+    followers: [mongoose.Types.ObjectId],
+    followings: [mongoose.Types.ObjectId],
     resetPasswordToken: string | undefined;
     resetPasswordTokenExpiry: Date | undefined;
 }
