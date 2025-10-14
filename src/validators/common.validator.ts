@@ -7,3 +7,6 @@ export const ObjectIdValidator = z.string().refine((val: any) => {
     message: "Invalid ObjectId"
 })
 
+export const paramIdSchema = z.object({
+    id:ObjectIdValidator
+})

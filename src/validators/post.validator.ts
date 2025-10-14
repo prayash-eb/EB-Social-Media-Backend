@@ -21,18 +21,6 @@ export const commentBodyScema = z.object({
 })
 
 
-export const commentParamSchema = z.object({
-    id: ObjectIdValidator
-})
-
-export const postParamSchema = z.object({
-    id: ObjectIdValidator
-})
-
-export const deletePostSchema = z.object({
-    id: ObjectIdValidator
-})
-
 export const deleteCommentParamSchema = z.object({
     postId: ObjectIdValidator,
     commentId: ObjectIdValidator
