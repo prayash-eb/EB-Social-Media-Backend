@@ -23,6 +23,7 @@ postRouter.get('/all', Authenticate, validateQuery(getPostsQuerySchema), postCon
 postRouter.get("/:id", Authenticate, validateParams(postParamSchema), postController.getUserPost)
 
 postRouter.patch("/like/:id", Authenticate, validateParams(postParamSchema), postController.likePost)
+postRouter.patch('/unlike/:id', Authenticate, validateParams(postParamSchema), postController.unLikePost)
 postRouter.patch("/comment/:id", Authenticate, validateParams(commentParamSchema), postController.commentPost)
 
 postRouter.delete('/delete-comment/:postId/:commentId', Authenticate, validateParams(deleteCommentParamSchema), postController.deleteComment)
