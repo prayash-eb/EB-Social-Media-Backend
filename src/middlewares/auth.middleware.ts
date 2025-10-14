@@ -15,6 +15,7 @@ declare global {
     namespace Express {
         interface Request {
             user?: JWTPayload
+            token?: string
         }
     }
 }
@@ -39,6 +40,7 @@ export const Authenticate = async (
 
         const decoded = jwt.verify(token, JWT_SECRET) as JWTPayload;
         req.user = decoded;
+        req.token = token
 
         // Validate against allowed sessions
         const user = await User.findById(decoded.id).select("sessions");

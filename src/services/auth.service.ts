@@ -24,7 +24,7 @@ export default class AuthService {
             device: device,
             createdAt: new Date(Date.now())
         })
-   
+
         // remove oldest session if already more than three
         if (user.sessions.length > 3) {
             user.sessions.sort((a: any, b: any) => a.createdAt - b.createdAt)
@@ -34,6 +34,20 @@ export default class AuthService {
         return accessToken;
     }
 
+    public logout = async (userId: mongoose.Types.ObjectId, token: string) => {
+        await User.findByIdAndUpdate(userId, {
+            $pull: {
+                sessions: { token }
+            },
+        })
+    }
+    public logoutAllDevices = async (userId: mongoose.Types.ObjectId) => {
+        await User.findByIdAndUpdate(userId, {
+            $set: {
+                sessions: []
+            }
+        })
+    }
     public register = async (credentials: UserRegisterDTO): Promise<IUser> => {
         const { name, email, password } = credentials;
         const user = await User.findOne({ email });

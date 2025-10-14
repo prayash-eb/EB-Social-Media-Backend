@@ -17,6 +17,26 @@ export default class AuthController {
         }
     }
 
+    public logout = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!
+            const accessToken = req.token!
+            await this.authService.logout(userId, accessToken);
+            res.status(200).json({ message: "Logged out Successfully" })
+        } catch (error) {
+            next(error)
+        }
+    }
+    public logoutAllDevices = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!
+            await this.authService.logoutAllDevices(userId)
+            res.status(200).json({ message: "Logged out from all devices" })
+        } catch (error) {
+            next(error)
+        }
+    }
+
     public register = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await this.authService.register(req.body)
