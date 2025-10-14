@@ -81,6 +81,9 @@ export const createRemoteImageUploader = async (req: Request, res: Response, nex
             // No image uploaded, just continue
             return next();
         }
+        if (req.file && req.file.size > 2 * 1024 * 1024) { // 2MB
+            return next(new Error("File too large"));
+        }
 
         try {
             const fileStream = Readable.from(req.file.buffer)
