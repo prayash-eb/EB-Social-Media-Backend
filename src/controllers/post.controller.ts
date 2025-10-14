@@ -1,13 +1,11 @@
 import type { Request, Response, NextFunction } from "express";
 import type PostService from "../services/post.service.js";
-import type { CloudinaryRequestOptions } from "../middlewares/upload.middleware.js";
-import mongoose from "mongoose";
-import type { CreateCommentDTO, CreatePostDTO, GetPostsQueryDTO } from "../validators/post.validator.js";
+import type { CreateCommentDTO, GetPostsQueryDTO } from "../validators/post.validator.js";
 
 export default class PostController {
     constructor(private postService: PostService) { }
 
-    public createUserPost = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
+    public createUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const filePath = req.file?.path ? req.file?.path : (req.cloudinary?.secure_url)
             const postData = { image: filePath, ...req.body }
@@ -17,7 +15,7 @@ export default class PostController {
             next(error)
         }
     }
-    public editUserPost = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
+    public editUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             let postId = req.params.id;
             if (!postId) {
