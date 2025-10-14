@@ -28,7 +28,7 @@ export default class PostController {
             if (filePath) {
                 updateData.image = filePath;
             }
-            const updatedPost = await this.postService.editPost(req.user?.id!, (postId as unknown) as mongoose.Types.ObjectId, updateData);
+            const updatedPost = await this.postService.editPost(req.user?.id!, postId, updateData);
             res.status(200).json({ message: "Post updated successfully", post: updatedPost });
         } catch (error) {
             next(error);
@@ -75,6 +75,16 @@ export default class PostController {
             next(error)
         }
     }
+    public unLikePost = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const postId = req.params.id!
+            await this.postService.unLikePost(userId, postId)
+            res.status(200).json({ message: "Post Like Removed Successfully" })
+        } catch (error) {
+            next(error)
+        }
+    }
     public commentPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
@@ -97,5 +107,4 @@ export default class PostController {
             next(error)
         }
     }
-
 }
