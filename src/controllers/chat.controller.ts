@@ -7,14 +7,23 @@ export default class ChatController {
         try {
             const sender = req.user?.id!;
             const { receiver, message } = req.body;
-            await this.chatService.sendMessage(sender, receiver, message)
-            res.status(200).json({ message: "Message sent successfully", sender, receiver })
+            const messageResult = await this.chatService.sendMessage(sender, receiver, message)
+            res.status(200).json({ ...messageResult })
+        } catch (error) {
+            next(error)
+        }
+    }
+    public getConversationsList = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const conversationList = await this.chatService.getConversations(userId)
+            res.status(200).json({ message: "Fetched Conversations successfully", conversationList })
         } catch (error) {
             next(error)
         }
     }
 
-    public getMessages = async (req: Request, res: Response, next: NextFunction) => {
+    public getConversationMessages = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
             const conversationId = req.params.conversationId!;

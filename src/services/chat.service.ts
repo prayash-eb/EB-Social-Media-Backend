@@ -4,47 +4,75 @@ import { AppError } from "../libs/customError.js";
 import User from "../models/user.model.js";
 
 export default class ChatService {
-    public sendMessage = async (senderId: mongoose.Types.ObjectId, receiverId: string, message: string) => {
-
-        const receiverObjectId = new mongoose.Types.ObjectId(receiverId)
-        const receiverExist = await User.findById(receiverObjectId)
+    public sendMessage = async (
+        senderId: mongoose.Types.ObjectId,
+        receiverId: string,
+        message: string
+    ) => {
+        const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+        const receiverExist = await User.findById(receiverObjectId);
 
         if (!receiverExist) {
-            throw new AppError("Receiver doesnot exist", 400, "CHAT_MODULE")
+            throw new AppError("Receiver does not exist", 400, "CHAT_MODULE");
         }
 
-        // check if conversation between the users already exists
-        let conversation = await Conversation.findOne({
-            participants: {
-                $all: [senderId, receiverObjectId]
-            }
-        })
+        // Sort participants to keep consistency
+        const participants = [senderId, receiverObjectId].sort();
 
-        // if user has previously delete conversation and started conversation again then remove that userId from deletedFor array
-        if (conversation?.deletedFor.includes(senderId)) {
-            await Conversation.updateOne({ _id: conversation._id }, {
-                $pull: {
-                    deletedFor: senderId
-                }
-            })
+        // Find or create conversation safely using upsert
+        let conversation = await Conversation.findOneAndUpdate(
+            { participants: { $all: participants } },
+            { $setOnInsert: { participants } },
+            { new: true, upsert: true }
+        );
+
+        // If previously deleted, re-activate for sender
+        if (conversation.deletedFor.includes(senderId)) {
+            await Conversation.updateOne(
+                { _id: conversation._id },
+                { $pull: { deletedFor: senderId } }
+            );
         }
 
-        // create one if doesnot exist
-        if (!conversation) {
-            conversation = await Conversation.create({
-                participants: [senderId, receiverObjectId]
-            })
-        }
-
-        // create a message and save in the database
+        // Create and save the message
         const newMessage = new Message({
             sender: senderId,
             receiver: receiverObjectId,
             message,
-            conversationId: conversation._id
-        })
+            conversationId: conversation._id,
+        });
 
-        await newMessage.save()
+        await newMessage.save();
+
+        // Update conversation timestamp
+        conversation.updatedAt = new Date();
+        await conversation.save();
+
+        return {
+            sender: newMessage.sender,
+            receiver: newMessage.receiver,
+            conversationId: newMessage.conversationId,
+            message: newMessage.message
+        }
+    };
+
+
+    public getConversations = async (userId: mongoose.Types.ObjectId) => {
+        const conversationList = await Conversation.find({
+            participants: {
+                $in: [userId]
+            },
+            deletedFor: {
+                $ne: userId
+            }
+        }).sort({ updatedAt: -1 })
+            .populate({
+                path: "participants",
+                select: "_id name", // Adjust to your user model fields
+            })
+            .lean();
+
+        return conversationList
     }
 
     public getMessages = async (userId: mongoose.Types.ObjectId, conversationId: string) => {
