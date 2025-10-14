@@ -18,8 +18,13 @@ interface LocalFileUploadOptions {
     maxSizeLimit?: number
 }
 
-export interface CloudinaryRequestOptions extends Request {
-    cloudinary?: cloudinary.UploadApiResponse
+declare global {
+    namespace Express {
+        interface Request {
+            cloudinary?: cloudinary.UploadApiResponse
+        }
+    }
+
 }
 export const createLocalImageUploader = (options?: LocalFileUploadOptions) => {
     const uploadDir = options?.destination
@@ -67,15 +72,16 @@ export const createLocalImageUploader = (options?: LocalFileUploadOptions) => {
 }
 
 
-export const createRemoteImageUploader = async (req: CloudinaryRequestOptions, res: Response, next: NextFunction) => {
+export const createRemoteImageUploader = async (req: Request, res: Response, next: NextFunction) => {
     uploadBuffer.single("image")(req, res, (error) => {
+        if (error) {
+            next(error)
+        }
         if (!req.file) {
             // No image uploaded, just continue
             return next();
         }
-        if (error) {
-            return next(error)
-        }
+
         try {
             const fileStream = Readable.from(req.file.buffer)
             const cloudStream = cloudinaryCloud.uploader.upload_stream({
