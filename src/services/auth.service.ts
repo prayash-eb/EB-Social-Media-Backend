@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import type { IUser, UserSession } from "../interfaces/user.interface.js";
-import type { UserLoginDTO, UserRegisterDTO } from "../dtos/user.dto.js";
+import type { UserLoginDTO, UserRegisterDTO } from "../validators/auth.validator.js";
 import { AppError } from "../libs/customError.js";
 import type mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";

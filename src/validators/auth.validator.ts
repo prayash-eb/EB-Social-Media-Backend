@@ -28,3 +28,5 @@ export const userResetPasswordQuerySchema = z.object({
     token: z.string().nonempty()
 })
 
+export type UserLoginDTO = z.infer<typeof userLoginSchema>
+export type UserRegisterDTO = z.infer<typeof userRegisterSchema>
