@@ -12,6 +12,12 @@ export interface IAcademicQualification {
     degreeName: string;
 }
 
+export interface UserSession {
+    token: string,
+    device: string,
+    createdAt: Date
+}
+
 export interface IUser extends Document {
     name: string;
     email: string;
@@ -20,11 +26,12 @@ export interface IUser extends Document {
     location: ILocation;
     dateOfBirth: string | undefined;
     academicQualifications: IAcademicQualification[];
-    posts: [],
-    followers: [mongoose.Types.ObjectId],
-    followings: [mongoose.Types.ObjectId],
+    posts: [mongoose.Types.ObjectId];
+    followers: [mongoose.Types.ObjectId];
+    followings: [mongoose.Types.ObjectId];
     resetPasswordToken: string | undefined;
     resetPasswordTokenExpiry: Date | undefined;
+    sessions: UserSession[]
 }
 
 export interface IUserModel extends IUser {

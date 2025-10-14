@@ -1,5 +1,5 @@
 import User from "../models/user.model.js";
-import type { IUser } from "../interfaces/user.interface.js";
+import type { IUser, UserSession } from "../interfaces/user.interface.js";
 import type { UserLoginDTO, UserRegisterDTO } from "../dtos/user.dto.js";
 import { AppError } from "../libs/customError.js";
 import type mongoose from "mongoose";
@@ -8,7 +8,7 @@ import { createHash } from "crypto";
 
 export default class AuthService {
 
-    public login = async (credentials: UserLoginDTO): Promise<string> => {
+    public login = async (credentials: UserLoginDTO, device: string): Promise<string> => {
         const { email, password } = credentials;
         const user = await User.findOne({ email })
         if (!user) {
@@ -19,6 +19,18 @@ export default class AuthService {
             throw new AppError("Invalid Credentials", 404, "AUTH_MODULE")
         }
         const accessToken = user.createJWT()
+        user.sessions.push({
+            token: accessToken,
+            device: device,
+            createdAt: new Date(Date.now())
+        })
+   
+        // remove oldest session if already more than three
+        if (user.sessions.length > 3) {
+            user.sessions.sort((a: any, b: any) => a.createdAt - b.createdAt)
+            user.sessions = user.sessions.slice(-3)
+        }
+        await user.save()
         return accessToken;
     }
 

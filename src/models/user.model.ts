@@ -3,6 +3,8 @@ import type { IUserModel } from "../interfaces/user.interface.js";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
 
+
+
 const userSchema = new Schema<IUserModel>({
     name: {
         type: String,
@@ -67,13 +69,21 @@ const userSchema = new Schema<IUserModel>({
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: "Post" }],
     followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     followings: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    
+
     resetPasswordToken: {
         type: String,
     },
     resetPasswordTokenExpiry: {
         type: Date
     },
+    sessions: [{
+        token: String,
+        device: String,
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true,
     toJSON: {

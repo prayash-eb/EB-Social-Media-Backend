@@ -7,7 +7,8 @@ export default class AuthController {
 
     public login = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const accessToken = await this.authService.login(req.body)
+            const userDevice = req.headers["user-agent"]!
+            const accessToken = await this.authService.login(req.body, userDevice)
             res.status(200).json({
                 token: accessToken
             })
