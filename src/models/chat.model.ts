@@ -6,12 +6,16 @@ export interface IMessage extends Document {
     message: string;
     conversationId: Types.ObjectId;
     isRead: boolean;
-    deletedFor: Types.ObjectId[]
+    deletedFor: Types.ObjectId[],
+    createdAt: Date,
+    updatedAt: Date
 }
 
 export interface IConversation extends Document {
     participants: Types.ObjectId[];
     deletedFor: Types.ObjectId[]
+    createdAt: Date,
+    updatedAt: Date
 }
 
 const messageSchema = new Schema<IMessage>({
@@ -61,8 +65,6 @@ const conversationSchema = new Schema<IConversation>({
     deletedFor: [{ type: Schema.Types.ObjectId, ref: "User", default: [] }]
 }, { timestamps: true });
 
-// making sure each conversation particiaptes are unique and indexing for faster query
-conversationSchema.index({ participants: 1 }, { unique: true });
 
 // making sure the participants array is not duplicated [UserA, UserB] === [UserB, UserA] for conversation participants !
 conversationSchema.pre('save', function (next) {
