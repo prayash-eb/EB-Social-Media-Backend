@@ -206,9 +206,18 @@ export default class PostService {
             .limit(batch)
             .populate("userId", "name")
 
+        const totalPages = Math.ceil(totalPosts / batch);
+        const paginationInfo = {
+            totalPosts,
+            totalPages,
+            currentPage: page,
+            batchSize: batch,
+            hasPrevPage: page > 1,
+            hasNextPage: page < totalPages
+        }
         return {
             postFeeds,
-            total: totalPosts
+            paginationInfo
         }
     }
 }
