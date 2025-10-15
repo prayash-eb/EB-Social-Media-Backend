@@ -3,8 +3,6 @@ import type { IUserModel } from "../interfaces/user.interface.js";
 import bcrypt from "bcryptjs";
 import jwt, { type SignOptions } from "jsonwebtoken"
 
-
-
 const userSchema = new Schema<IUserModel>({
     name: {
         type: String,
