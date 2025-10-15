@@ -20,11 +20,11 @@ postRouter.post("/create", Authenticate, remoteFileUploader, validateBody(create
 postRouter.post("/edit/:id", Authenticate, remoteFileUploader, validateBody(editPostSchema), postController.editUserPost)
 postRouter.delete("/delete/:id", Authenticate, validateParams(paramIdSchema), postController.deleteUserPost)
 postRouter.get('/all', Authenticate, validateQuery(getPostsQuerySchema), postController.getUserPosts)
-postRouter.get("/:id", Authenticate, validateParams(paramIdSchema), postController.getUserPost)
 postRouter.patch("/like/:id", Authenticate, validateParams(paramIdSchema), postController.likePost)
 postRouter.patch('/unlike/:id', Authenticate, validateParams(paramIdSchema), postController.unLikePost)
 postRouter.patch("/comment/:id", Authenticate, validateParams(paramIdSchema), postController.commentPost)
 postRouter.delete('/delete-comment/:postId/:commentId', Authenticate, validateParams(deleteCommentParamSchema), postController.deleteComment)
-
+postRouter.get('/feeds', Authenticate, validateQuery(getPostsQuerySchema), postController.listUserFeeds)
+postRouter.get("/:id", Authenticate, validateParams(paramIdSchema), postController.getUserPost)
 
 export default postRouter

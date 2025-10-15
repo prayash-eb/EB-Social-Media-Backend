@@ -72,7 +72,7 @@ export default class PostService {
     public getPosts = async (userId: mongoose.Types.ObjectId, queries: GetPostsQueryDTO) => {
         const { batch, page, sort } = queries
         const skip = (page - 1) * batch
-        // asc:1 and desc:1 in mongoose
+        // asc:1 and desc:-1 in mongoose
         const sortOrder = sort === "asc" ? 1 : -1
         const totalPosts = await Post.countDocuments({
             userId
@@ -182,5 +182,33 @@ export default class PostService {
             throw new AppError("Comment not found or not authorized", 403, "POST_MODULE");
         }
     }
+    // implementing batch fetching
+    public getFeeds = async (userId: mongoose.Types.ObjectId, queries: GetPostsQueryDTO) => {
+        const { page, batch, sort } = queries
+        const skip = (page - 1) * batch
+        const sortOrder = sort === "asc" ? 1 : -1
 
+        const user = await User.findById(userId).select("followings").lean();
+
+        const postQuery = {
+            userId: { $in: [userId, ...(user?.followings || [])] }
+        }
+        const totalPosts = await Post.countDocuments(postQuery)
+        if (totalPosts === 0) {
+            return {
+                postFeeds: [],
+                total: 0
+            }
+        }
+        const postFeeds = await Post.find(postQuery)
+            .sort({ createdAt: sortOrder })
+            .skip(skip)
+            .limit(batch)
+            .populate("userId", "name")
+
+        return {
+            postFeeds,
+            total: totalPosts
+        }
+    }
 }

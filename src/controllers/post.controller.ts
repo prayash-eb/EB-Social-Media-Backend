@@ -105,4 +105,15 @@ export default class PostController {
             next(error)
         }
     }
+    public listUserFeeds = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const queries = (req as any).parsedQuery as GetPostsQueryDTO
+            const feeds = await this.postService.getFeeds(userId, queries)
+            res.status(200).json({ message: "Feeds fetched successfully", ...feeds })
+        } catch (error) {
+            next(error)
+        }
+    }
+
 }
