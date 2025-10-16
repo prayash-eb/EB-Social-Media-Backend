@@ -26,15 +26,7 @@ const postSchema = new Schema<IPost>(
         commentsCount: {
             type: Number,
             default: 0,
-        },
-        // likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-        // comments: [
-        //     {
-        //         commentorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-        //         comment: { type: String, required: true },
-        //         createdAt: { type: Date, default: Date.now }
-        //     }
-        // ]
+        }
     },
     { timestamps: true }
 );
