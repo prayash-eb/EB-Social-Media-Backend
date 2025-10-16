@@ -3,23 +3,23 @@ import type PostService from "../services/post.service.js";
 import type { CreateCommentDTO, GetPostsQueryDTO } from "../validators/post.validator.js";
 
 export default class PostController {
-    constructor(private postService: PostService) { }
+    constructor(private postService: PostService) {}
 
     public createUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const filePath = req.file?.path ? req.file?.path : (req.cloudinary?.secure_url)
-            const postData = { image: filePath, ...req.body }
-            const post = await this.postService.createPost(req.user?.id!, postData)
-            res.status(201).json({ message: "Post created successfully", post })
+            const filePath = req.file?.path ? req.file?.path : req.cloudinary?.secure_url;
+            const postData = { image: filePath, ...req.body };
+            const post = await this.postService.createPost(req.user?.id!, postData);
+            res.status(201).json({ message: "Post created successfully", post });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public editUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             let postId = req.params.id;
             if (!postId) {
-                return res.status(400).json({ message: "Please provide post id." })
+                return res.status(400).json({ message: "Please provide post id." });
             }
             const filePath = req.file?.path ? req.file?.path : req.cloudinary?.secure_url;
             const updateData = { ...req.body };
@@ -31,89 +31,87 @@ export default class PostController {
         } catch (error) {
             next(error);
         }
-    }
+    };
     public deleteUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!
+            const userId = req.user?.id!;
             const postId = req.params.id!;
-            await this.postService.deletePost(userId, postId)
-            res.status(200).json({ message: "Post deleted Successfully" })
+            await this.postService.deletePost(userId, postId);
+            res.status(200).json({ message: "Post deleted Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public getUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
             const postId = req.params.id!;
-            const post = await this.postService.getPost(userId, postId)
-            res.status(200).json({ message: "Fetched Post Successfully", post })
-
+            const { post, comments } = await this.postService.getPost(userId, postId);
+            res.status(200).json({ message: "Fetched Post Successfully", post, comments });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public getUserPosts = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
-            const queries = ((req as any).parsedQuery as unknown) as GetPostsQueryDTO
-            const posts = await this.postService.getPosts(userId, queries)
-            res.status(200).json({ message: "Fetched Post Successfully", ...posts })
+            const queries = (req as any).parsedQuery as unknown as GetPostsQueryDTO;
+            const posts = await this.postService.getPosts(userId, queries);
+            res.status(200).json({ message: "Fetched Post Successfully", posts });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public likePost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
-            const postId = req.params.id!
-            await this.postService.likePost(userId, postId)
-            res.status(200).json({ message: "Post Liked Successfully" })
+            const postId = req.params.id!;
+            await this.postService.likePost(userId, postId);
+            res.status(200).json({ message: "Post Liked Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public unLikePost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
-            const postId = req.params.id!
-            await this.postService.unLikePost(userId, postId)
-            res.status(200).json({ message: "Post Like Removed Successfully" })
+            const postId = req.params.id!;
+            await this.postService.unLikePost(userId, postId);
+            res.status(200).json({ message: "Post Like Removed Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public commentPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
             const postId = req.params.id!;
-            const commentData = req.body as CreateCommentDTO
-            await this.postService.commentPost(userId, postId, commentData)
-            res.status(200).json({ message: "Comment Successfull" })
+            const commentData = req.body as CreateCommentDTO;
+            await this.postService.commentPost(userId, postId, commentData);
+            res.status(200).json({ message: "Comment Successfull" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public deleteComment = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
             const postId = req.params.postId!;
-            const commentId = req.params.commentId!
-            await this.postService.deleteComment(userId, postId, commentId)
-            res.status(200).json({ message: "Comment Deleted Successfully" })
+            const commentId = req.params.commentId!;
+            await this.postService.deleteComment(userId, postId, commentId);
+            res.status(200).json({ message: "Comment Deleted Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public listUserFeeds = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
-            const queries = (req as any).parsedQuery as GetPostsQueryDTO
-            const feeds = await this.postService.getFeeds(userId, queries)
-            res.status(200).json({ message: "Feeds fetched successfully", ...feeds })
+            const queries = (req as any).parsedQuery as GetPostsQueryDTO;
+            const feeds = await this.postService.getFeeds(userId, queries);
+            res.status(200).json({ message: "Feeds fetched successfully", ...feeds });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
-
+    };
 }

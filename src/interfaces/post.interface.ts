@@ -1,7 +1,7 @@
 import { Document, Types } from "mongoose";
 
 export interface IComment {
-    _id?:Types.ObjectId,
+    _id?: Types.ObjectId;
     commentorId: Types.ObjectId;
     comment: string;
     createdAt: Date;
@@ -12,6 +12,8 @@ export interface IPost extends Document {
     description: string;
     image: string;
     userId: Types.ObjectId;
+    likesCount: number;
+    commentsCount: number;
     likes: Types.ObjectId[];
     comments: IComment[];
     createdAt?: Date;

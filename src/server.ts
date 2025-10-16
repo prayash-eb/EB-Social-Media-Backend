@@ -1,11 +1,11 @@
 import { config } from "dotenv";
-config()
+config();
 
 import app from "./app.js";
 import connectDB from "./configs/database.js";
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, async () => {
-    await connectDB()
+    await connectDB();
     console.log(`Server is running in port:${PORT}`);
-})
+});

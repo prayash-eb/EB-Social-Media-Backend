@@ -1,94 +1,113 @@
-
-import { type NextFunction, type Request, type Response } from "express"
-import AuthService from "../services/auth.service.js"
+import { type NextFunction, type Request, type Response } from "express";
+import AuthService from "../services/auth.service.js";
 
 export default class AuthController {
-    constructor(private authService: AuthService) { }
-
+    constructor(private authService: AuthService) {}
     public login = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userDevice = req.headers["user-agent"]!
-            const accessToken = await this.authService.login(req.body, userDevice)
+            const userDevice = req.headers["user-agent"]!;
+            const { accessToken, refreshToken } = await this.authService.login(
+                req.body,
+                userDevice
+            );
             res.status(200).json({
-                token: accessToken
-            })
+                accessToken,
+                refreshToken,
+            });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
 
     public logout = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!
-            const accessToken = req.token!
-            await this.authService.logout(userId, accessToken);
-            res.status(200).json({ message: "Logged out Successfully" })
+            const userId = req.user?.id!;
+            const jti = req.user?.jti!;
+            await this.authService.logout(userId, jti);
+            res.status(200).json({ message: "Logged out Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public logoutAllDevices = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!
-            await this.authService.logoutAllDevices(userId)
-            res.status(200).json({ message: "Logged out from all devices" })
+            const userId = req.user?.id!;
+            const revokedSessionsCount = await this.authService.logoutAllDevices(userId);
+            res.status(200).json({
+                message: "Logged out from all devices",
+                revokedCount: revokedSessionsCount,
+            });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
+
+    public refreshToken = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const jti = req.user?.jti!;
+            const { accessToken, newRefreshToken: refreshToken } =
+                await this.authService.refreshToken(userId, jti);
+            res.status(200).json({
+                message: "Token Refreshed Successfully",
+                accessToken,
+                refreshToken,
+            });
+        } catch (error) {
+            next(error);
+        }
+    };
 
     public register = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const user = await this.authService.register(req.body)
-            res.status(201).json({ user })
+            const user = await this.authService.register(req.body);
+            res.status(201).json({ user });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
 
     public profile = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id
-            const user = await this.authService.getUser(userId!)
+            const userId = req.user?.id;
+            const user = await this.authService.getUser(userId!);
             res.status(200).json({
-                user
-            })
+                user,
+            });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
     public changePassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
-            const { oldPassword, newPassword } = req.body
-            await this.authService.changePassword(userId, oldPassword, newPassword)
-            res.status(200).json({ message: "Password changed successfully" })
+            const { oldPassword, newPassword } = req.body;
+            await this.authService.changePassword(userId, oldPassword, newPassword);
+            res.status(200).json({ message: "Password changed successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-
-    }
+    };
 
     public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email } = req.body;
-            const DOMAIN_URL = `${req.protocol}://${req.headers.host}${req.originalUrl}`
-            const resetPasswordLink = await this.authService.resetPasswordLink(DOMAIN_URL, email)
-            res.status(200).json({ resetPasswordLink })
+            const DOMAIN_URL = `${req.protocol}://${req.headers.host}${req.originalUrl}`;
+            const resetPasswordLink = await this.authService.resetPasswordLink(DOMAIN_URL, email);
+            res.status(200).json({ resetPasswordLink });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
+    };
 
     public resetPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const { newPassword } = req.body
-            const resetToken = req.query.token as string
-            await this.authService.resetPassword(newPassword, resetToken)
-            res.status(200).json({ message: "Password Reset Successfully" })
+            const { newPassword } = req.body;
+            const resetToken = req.query.token as string;
+            await this.authService.resetPassword(newPassword, resetToken);
+            res.status(200).json({ message: "Password Reset Successfully" });
         } catch (error) {
-            next(error)
+            next(error);
         }
-    }
-
+    };
 }

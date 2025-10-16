@@ -52,106 +52,110 @@ export default class ChatService {
             sender: newMessage.sender,
             receiver: newMessage.receiver,
             conversationId: newMessage.conversationId,
-            message: newMessage.message
-        }
+            message: newMessage.message,
+        };
     };
-
 
     public getConversations = async (userId: mongoose.Types.ObjectId) => {
         const conversationList = await Conversation.find({
             participants: {
-                $in: [userId]
+                $in: [userId],
             },
             deletedFor: {
-                $ne: userId
-            }
-        }).sort({ updatedAt: -1 })
+                $ne: userId,
+            },
+        })
+            .sort({ updatedAt: -1 })
             .populate({
                 path: "participants",
                 select: "_id name", // Adjust to your user model fields
             })
             .lean();
 
-        return conversationList
-    }
+        return conversationList;
+    };
 
     public getMessages = async (userId: mongoose.Types.ObjectId, conversationId: string) => {
-
-        const conversationObjectId = new mongoose.Types.ObjectId(conversationId)
+        const conversationObjectId = new mongoose.Types.ObjectId(conversationId);
         // find conversation which belongs to this user not others
         const conversation = await Conversation.findOne({
             _id: conversationObjectId,
             participants: { $in: [userId] },
             deletedFor: {
-                $ne: userId
-            }
-        })
+                $ne: userId,
+            },
+        });
         if (!conversation) {
-            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE")
+            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE");
         }
 
         const messages = await Message.find({
             conversationId: conversationObjectId,
             deletedFor: {
-                $ne: userId
-            }
-        }).sort({ createdAt: 1 }).populate("sender", "name").populate("receiver", "name")
+                $ne: userId,
+            },
+        })
+            .sort({ createdAt: 1 })
+            .populate("sender", "name")
+            .populate("receiver", "name");
 
-        return messages
-    }
+        return messages;
+    };
 
     public markAsRead = async (userId: mongoose.Types.ObjectId, conversationId: string) => {
-
-        const conversationObjectId = new mongoose.Types.ObjectId(conversationId)
+        const conversationObjectId = new mongoose.Types.ObjectId(conversationId);
 
         const conversation = await Conversation.findOne({
             _id: conversationObjectId,
             participants: {
-                $in: [userId]
-            }
-        })
+                $in: [userId],
+            },
+        });
         if (!conversation) {
-            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE")
+            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE");
         }
 
         // update all messages to read at once.
-        const result = await Message.updateMany({
-            conversationId: conversationObjectId,
-            receiver: userId,
-            isRead: false
-        }, {
-            $set: {
-                isRead: true
+        const result = await Message.updateMany(
+            {
+                conversationId: conversationObjectId,
+                receiver: userId,
+                isRead: false,
+            },
+            {
+                $set: {
+                    isRead: true,
+                },
             }
-        })
+        );
 
         // return count of marked as read message
         return result.modifiedCount;
-    }
+    };
 
     public getUnreadMessages = async (userId: mongoose.Types.ObjectId) => {
         const unreadMessages = await Message.find({
             receiver: userId,
             isRead: false,
-            deletedFor: { $ne: userId }
-        }).sort({ createdAt: 1 })
+            deletedFor: { $ne: userId },
+        })
+            .sort({ createdAt: 1 })
             .populate("sender", "name")
-            .populate("receiver", "name")
+            .populate("receiver", "name");
 
-        return unreadMessages
-    }
+        return unreadMessages;
+    };
 
     public getUnreadMessagesCount = async (userId: mongoose.Types.ObjectId) => {
-
         const unreadCounts = await Message.aggregate([
             {
                 $match: {
                     isRead: false,
                     receiver: new mongoose.Types.ObjectId(userId),
                     deletedFor: {
-                        $ne: userId
-                    }
-                }
+                        $ne: userId,
+                    },
+                },
             },
             {
                 $group: {
@@ -159,19 +163,19 @@ export default class ChatService {
                     count: { $sum: 1 },
                     sender: { $first: "$sender" },
                     receiver: { $first: "$receiver" },
-                    lastMessageAt: { $max: "$createdAt" }
-                }
+                    lastMessageAt: { $max: "$createdAt" },
+                },
             },
             {
-                $sort: { lastMessageAt: -1 }
+                $sort: { lastMessageAt: -1 },
             },
             {
                 $lookup: {
                     from: "users",
                     localField: "sender",
                     foreignField: "_id",
-                    as: "sender"
-                }
+                    as: "sender",
+                },
             },
             // convert array result into object
             { $unwind: "$sender" },
@@ -180,8 +184,8 @@ export default class ChatService {
                     from: "users",
                     localField: "receiver",
                     foreignField: "_id",
-                    as: "receiver"
-                }
+                    as: "receiver",
+                },
             },
             { $unwind: "$receiver" },
             {
@@ -193,23 +197,22 @@ export default class ChatService {
                     "receiver._id": 1,
                     "receiver.name": 1,
                     lastMessageAt: 1,
-
-                }
-            }
-        ])
+                },
+            },
+        ]);
         if (!unreadCounts.length) {
             return {
-                count: 0
-            }
+                count: 0,
+            };
         }
-        return unreadCounts
-    }
+        return unreadCounts;
+    };
 
     public deleteConversation = async (userId: mongoose.Types.ObjectId, conversationId: string) => {
         const conversationObjectId = new mongoose.Types.ObjectId(conversationId);
         let conversation = await Conversation.findById(conversationObjectId);
         if (!conversation) {
-            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE")
+            throw new AppError("Conversation Not Found", 400, "CHAT_MODULE");
         }
 
         if (!conversation.participants.includes(userId)) {
@@ -219,33 +222,41 @@ export default class ChatService {
             { _id: conversationObjectId },
             { $addToSet: { deletedFor: userId } },
             { new: true }
-        )
+        );
         // if conversation is deleted from both sides we can delete the conservation as well all its messages
-        if (updatedConversation && updatedConversation?.deletedFor.length >= updatedConversation?.participants.length) {
+        if (
+            updatedConversation &&
+            updatedConversation?.deletedFor.length >= updatedConversation?.participants.length
+        ) {
             await Message.deleteMany({ conversationId: conversationObjectId });
             await Conversation.deleteOne({ _id: conversationObjectId });
-            return
+            return;
         }
 
-        await Message.updateMany({
-            conversationId: conversationObjectId
-        }, {
-            $addToSet: { deletedFor: userId }
-        })
-    }
+        await Message.updateMany(
+            {
+                conversationId: conversationObjectId,
+            },
+            {
+                $addToSet: { deletedFor: userId },
+            }
+        );
+    };
 
     public deleteMessage = async (userId: mongoose.Types.ObjectId, messageId: string) => {
         const messageObjectId = new mongoose.Types.ObjectId(messageId);
         const message = await Message.findById(messageObjectId);
         if (!message) {
-            throw new AppError("Message Not Found", 400, "CHAT_MODULE")
+            throw new AppError("Message Not Found", 400, "CHAT_MODULE");
         }
         if (message.sender.equals(userId) && message.receiver.equals(userId)) {
-            throw new AppError("Forbidden to delete message", 403, "CHAT_MODULE")
+            throw new AppError("Forbidden to delete message", 403, "CHAT_MODULE");
         }
-        await Message.updateOne({ _id: messageObjectId }, {
-            $addToSet: { deletedFor: userId }
-        })
-    }
-
+        await Message.updateOne(
+            { _id: messageObjectId },
+            {
+                $addToSet: { deletedFor: userId },
+            }
+        );
+    };
 }

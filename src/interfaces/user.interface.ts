@@ -2,20 +2,14 @@ import type mongoose from "mongoose";
 import type { Document } from "mongoose";
 
 export interface ILocation {
-    type: "Point",
-    coordinates: [number, number]
+    type: "Point";
+    coordinates: [number, number];
 }
 
 export interface IAcademicQualification {
     id: string;
     passedYear: number;
     degreeName: string;
-}
-
-export interface UserSession {
-    token: string,
-    device: string,
-    createdAt: Date
 }
 
 export interface IUser extends Document {
@@ -31,10 +25,9 @@ export interface IUser extends Document {
     followings: [mongoose.Types.ObjectId];
     resetPasswordToken: string | undefined;
     resetPasswordTokenExpiry: Date | undefined;
-    sessions: UserSession[]
 }
 
 export interface IUserModel extends IUser {
     comparePassword(candidatePassword: string): Promise<boolean>;
-    createJWT(): string;
+    createTokens(): { jti: string; accessToken: string; refreshToken: string };
 }
