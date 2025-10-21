@@ -27,6 +27,9 @@ export const userResetPasswordSchema = z.object({
 export const userResetPasswordQuerySchema = z.object({
     token: z.string().nonempty(),
 });
+export const userEmailVerificationTokenSchema = z.object({
+    token: z.string().nonempty(),
+});
 
 export type UserLoginDTO = z.infer<typeof userLoginSchema>;
 export type UserRegisterDTO = z.infer<typeof userRegisterSchema>;

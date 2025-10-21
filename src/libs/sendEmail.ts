@@ -9,12 +9,10 @@ export const sendEmail = async (to: string, subject: string, body: string) => {
             html: body,
         });
         if (emailResponse.accepted.includes(to)) {
-            console.log(`Email Successfully sent to ${to}`);
             return true;
         }
         return false;
     } catch (error) {
-        console.log("Error while sending email", error);
         return false;
     }
 };

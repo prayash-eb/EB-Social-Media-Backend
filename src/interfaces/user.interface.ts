@@ -25,6 +25,9 @@ export interface IUser extends Document {
     followings: [mongoose.Types.ObjectId];
     resetPasswordToken: string | undefined;
     resetPasswordTokenExpiry: Date | undefined;
+    isEmailVerified: Boolean;
+    emailVerificationToken: string | undefined;
+    emailVerificationTokenExpiry: Date | undefined;
 }
 
 export interface IUserModel extends IUser {

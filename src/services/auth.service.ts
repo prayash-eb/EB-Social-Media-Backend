@@ -6,8 +6,8 @@ import type mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
 import Session from "../models/session.model.js";
-import { sendEmail } from "../libs/sendEmail.js";
-import { sendWelcomeEmail } from "./mail/handlers/welcome.handler.js";
+import { sendResetPasswordEmail } from "./mail/handlers/resetPassword.handler.js";
+import { sendVerificationEmail } from "./mail/handlers/verificationEmail.handler.js";
 
 export default class AuthService {
     public login = async (credentials: UserLoginDTO, device: string) => {
@@ -31,12 +31,7 @@ export default class AuthService {
     };
     public logoutAllDevices = async (userId: mongoose.Types.ObjectId) => {
         const result = await Session.deleteMany(
-            { userId },
-            {
-                $set: {
-                    valid: false,
-                },
-            }
+            { userId }
         );
         return result.deletedCount;
     };
@@ -67,18 +62,28 @@ export default class AuthService {
         if (user) {
             throw new AppError("User with email already exists", 409, "AUTH_MODULE");
         }
+
+        const emailVerificationToken = uuidv4();
+        const hashedEmailVerificationToken = createHash("sha256")
+            .update(emailVerificationToken)
+            .digest("hex");
+
         const savedUser = await User.create({
             name,
             email,
             password,
+            emailVerificationToken: hashedEmailVerificationToken,
+            emailVerificationTokenExpiry: new Date(Date.now() + 5 * 60 * 1000),
         });
 
-        const userInfo = {
+        const verificationLink = `${process.env.BASE_URL}/auth/verify-email?token=${emailVerificationToken}`
+
+        sendVerificationEmail({
             name: savedUser.name,
             email: savedUser.email,
-        };
-
-        sendWelcomeEmail(userInfo);
+            verificationLink,
+            expiryTime: savedUser.emailVerificationTokenExpiry!
+        });
         return savedUser;
     };
     public getUser = async (userId: mongoose.Types.ObjectId): Promise<IUser> => {
@@ -104,24 +109,33 @@ export default class AuthService {
         user.password = newPassword;
         await user.save();
     };
-    public resetPasswordLink = async (DOMAIN_URL: string, email: string): Promise<string> => {
+    public resetPasswordLink = async (email: string): Promise<string> => {
         const user = await User.findOne({ email });
         if (!user) {
             throw new AppError("User not Found", 400, "AUTH_MODULE");
         }
-        // generate resetPassword token using uuid
+        // generate token
         const resetPasswordToken = uuidv4();
-
-        // create a sha256 hash and save it into database
         const hashedResetPasswordToken = createHash("sha256")
             .update(resetPasswordToken)
             .digest("hex");
 
+        // save token and expiry in db
         user.resetPasswordToken = hashedResetPasswordToken;
-        user.resetPasswordTokenExpiry = new Date(Date.now() + 5 * 60 * 60 * 1000);
+        user.resetPasswordTokenExpiry = new Date(Date.now() + 5 * 60 * 1000);
         await user.save();
 
-        return `${DOMAIN_URL}/reset-password?token=${resetPasswordToken}`;
+        const resetPasswordLink = `${process.env.BASE_URL}/auth/reset-password?token=${resetPasswordToken}`;
+
+        // send an email with resetPasswordLink
+        sendResetPasswordEmail({
+            name: user.name,
+            email: user.email,
+            resetPasswordLink,
+            expiryTime: user.resetPasswordTokenExpiry,
+        });
+
+        return resetPasswordLink;
     };
     public resetPassword = async (newPassword: string, resetToken: string): Promise<void> => {
         const hashedResetPasswordToken = createHash("sha256").update(resetToken).digest("hex");
@@ -132,7 +146,7 @@ export default class AuthService {
             },
         });
         if (!user) {
-            throw new AppError("Invalid Token", 400, "AUTH_MODULE");
+            throw new AppError("Invalid Password Reset Token", 400, "AUTH_MODULE");
         }
 
         // clear the token & expiry time as well
@@ -142,5 +156,55 @@ export default class AuthService {
         // automatically hashed using pre hook on save
         user.password = newPassword;
         await user.save();
+    };
+    public sendVerificationEmail = async (email: string) => {
+        const user = await User.findOne({
+            email,
+        });
+        if (!user) {
+            throw new AppError("User not found", 404, "AUTH_MODULE");
+        }
+
+        // generate token
+        const emailVerificationToken = uuidv4();
+        const hashedVerificationToken = createHash("sha256")
+            .update(emailVerificationToken)
+            .digest("hex");
+
+        // save token and expiry
+        user.emailVerificationToken = hashedVerificationToken;
+        user.emailVerificationTokenExpiry = new Date(Date.now() + 5 * 60 * 1000);
+        await user.save();
+
+        const verificationLink = `${process.env.BASE_URL}/auth/verify-email?token=${emailVerificationToken}`;
+
+        sendVerificationEmail({
+            name: user.name,
+            email: user.email,
+            verificationLink,
+            expiryTime: user.emailVerificationTokenExpiry,
+        });
+
+        return verificationLink;
+    };
+    public verifyEmail = async (emailVerificationToken: string) => {
+        const hashedEmailVerificationToken = createHash("sha256")
+            .update(emailVerificationToken)
+            .digest("hex");
+
+        const user = await User.findOneAndUpdate(
+            {
+                emailVerificationToken: hashedEmailVerificationToken,
+                emailVerificationTokenExpiry: { $gt: Date.now() },
+            },
+            {
+                $set: { isEmailVerified: true },
+                $unset: { emailVerificationToken: "", emailVerificationTokenExpiry: "" },
+            },
+            { new: true } // return the updated document
+        );
+        if (!user) {
+            throw new AppError("Invalid Email Verification Token", 400, "AUTH_MODULE");
+        }
     };
 }

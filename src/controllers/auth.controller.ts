@@ -61,7 +61,10 @@ export default class AuthController {
     public register = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const user = await this.authService.register(req.body);
-            res.status(201).json({ user });
+            res.status(201).json({
+                message: "Verification link has been sent to your email. Please verify",
+                user,
+            });
         } catch (error) {
             next(error);
         }
@@ -92,8 +95,7 @@ export default class AuthController {
     public forgotPassword = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { email } = req.body;
-            const DOMAIN_URL = `${req.protocol}://${req.headers.host}${req.originalUrl}`;
-            const resetPasswordLink = await this.authService.resetPasswordLink(DOMAIN_URL, email);
+            const resetPasswordLink = await this.authService.resetPasswordLink(email);
             res.status(200).json({ resetPasswordLink });
         } catch (error) {
             next(error);
@@ -106,6 +108,22 @@ export default class AuthController {
             const resetToken = req.query.token as string;
             await this.authService.resetPassword(newPassword, resetToken);
             res.status(200).json({ message: "Password Reset Successfully" });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public sendUserVerificationEmail = async (req: Request, res: Response, next: NextFunction) => {
+        const email = req.user?.email!;
+        const verificationLink = await this.authService.sendVerificationEmail(email);
+        res.status(200).json({ message: "Verification Email Sent Successfully", verificationLink });
+    };
+
+    public verifyUserEmail = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const emailVerificationToken = req.query.token as string;
+            await this.authService.verifyEmail(emailVerificationToken);
+            res.status(200).json({ message: "Email Verified Successfully" });
         } catch (error) {
             next(error);
         }

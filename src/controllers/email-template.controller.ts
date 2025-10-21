@@ -42,6 +42,7 @@ export default class EmailTemplateController {
         try {
             const templateId = req.params.id!;
             await this.emailTemplateService.deleteTemplate(templateId);
+            res.status(200).json({ message: "Template Deleted Successfully" });
         } catch (error) {
             next(error);
         }

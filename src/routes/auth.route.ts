@@ -8,6 +8,7 @@ import {
 import { validateBody, validateQuery } from "../middlewares/validation.middleware.js";
 import {
     userChangePasswordSchema,
+    userEmailVerificationTokenSchema,
     userForgotPasswordSchema,
     userLoginSchema,
     userRegisterSchema,
@@ -42,5 +43,17 @@ authRouter.post(
 authRouter.get("/logout", AuthenticateAccessToken, authController.logout);
 authRouter.get("/logout-all", AuthenticateAccessToken, authController.logoutAllDevices);
 authRouter.get("/refresh-token", AuthenticateRefreshToken, authController.refreshToken);
+
+authRouter.get(
+    "/send-verification-link",
+    AuthenticateAccessToken,
+    authController.sendUserVerificationEmail
+);
+
+authRouter.patch(
+    "/verify-email",
+    validateQuery(userEmailVerificationTokenSchema),
+    authController.verifyUserEmail
+);
 
 export default authRouter;

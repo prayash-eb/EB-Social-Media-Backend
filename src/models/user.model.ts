@@ -78,12 +78,15 @@ const userSchema = new Schema<IUserModel>(
         followers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
         followings: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
-        resetPasswordToken: {
-            type: String,
+        isEmailVerified: {
+            type: Boolean,
+            default: false,
         },
-        resetPasswordTokenExpiry: {
-            type: Date,
-        },
+
+        resetPasswordToken: String,
+        resetPasswordTokenExpiry: Date,
+        emailVerificationToken: String,
+        emailVerificationTokenExpiry: Date,
     },
     {
         timestamps: true,
