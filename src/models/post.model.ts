@@ -26,7 +26,7 @@ const postSchema = new Schema<IPost>(
         commentsCount: {
             type: Number,
             default: 0,
-        }
+        },
     },
     { timestamps: true }
 );

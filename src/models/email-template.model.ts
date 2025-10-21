@@ -19,34 +19,34 @@ export interface IEmailTemplate extends Document {
     name: string;
     subject: string;
     body: string; // Handlebars template
-    description: string,
+    description: string;
     createdAt: Date;
     updatedAt: Date;
 }
 
-
-const emailTemplateSchema = new Schema<IEmailTemplate>({
-    name: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true,
-        toUpperCase: true
+const emailTemplateSchema = new Schema<IEmailTemplate>(
+    {
+        name: {
+            type: String,
+            required: true,
+            unique: true,
+            index: true,
+            toUpperCase: true,
+        },
+        subject: {
+            type: String,
+            required: true,
+        },
+        body: {
+            type: String,
+            required: true,
+        },
+        description: {
+            type: String,
+        },
     },
-    subject: {
-        type: String,
-        required: true,
-    },
-    body: {
-        type: String,
-        required: true
-    },
-    description: {
-        type: String
-    }
-},
     { timestamps: true }
-)
+);
 
-const EmailTemplate = model<IEmailTemplate>("EmaiLTemplate", emailTemplateSchema)
-export default EmailTemplate
+const EmailTemplate = model<IEmailTemplate>("EmaiLTemplate", emailTemplateSchema);
+export default EmailTemplate;

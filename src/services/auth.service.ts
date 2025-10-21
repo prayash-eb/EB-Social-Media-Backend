@@ -75,10 +75,10 @@ export default class AuthService {
 
         const userInfo = {
             name: savedUser.name,
-            email: savedUser.email
-        }
+            email: savedUser.email,
+        };
 
-        sendWelcomeEmail(userInfo)
+        sendWelcomeEmail(userInfo);
         return savedUser;
     };
     public getUser = async (userId: mongoose.Types.ObjectId): Promise<IUser> => {

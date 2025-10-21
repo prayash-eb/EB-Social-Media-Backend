@@ -20,7 +20,7 @@ app.use("/api/v1/user", userRouter);
 app.use("/api/v1/post", postRouter);
 app.use("/api/v1", followRouter);
 app.use("/api/v1/chat", chatRouter);
-app.use("/api/v1/email-template", emailTemplateRouter)
+app.use("/api/v1/email-template", emailTemplateRouter);
 
 app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({
