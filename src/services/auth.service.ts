@@ -6,6 +6,8 @@ import type mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import { createHash } from "crypto";
 import Session from "../models/session.model.js";
+import { sendEmail } from "../libs/sendEmail.js";
+import { sendWelcomeEmail } from "./mail/handlers/welcome.handler.js";
 
 export default class AuthService {
     public login = async (credentials: UserLoginDTO, device: string) => {
@@ -70,6 +72,13 @@ export default class AuthService {
             email,
             password,
         });
+
+        const userInfo = {
+            name: savedUser.name,
+            email: savedUser.email
+        }
+
+        sendWelcomeEmail(userInfo)
         return savedUser;
     };
     public getUser = async (userId: mongoose.Types.ObjectId): Promise<IUser> => {
