@@ -9,6 +9,7 @@ import followRouter from "./routes/follower.route.js";
 import chatRouter from "./routes/chat.route.js";
 import emailTemplateRouter from "./routes/email-template.route.js";
 import notificationRouter from "./routes/notification.route.js";
+import paymentRouter from "./routes/payment.route.js";
 
 const app: Application = express();
 
@@ -22,7 +23,8 @@ app.use("/api/v1/post", postRouter);
 app.use("/api/v1", followRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/email-template", emailTemplateRouter);
-app.use('/api/v1/notifications', notificationRouter)
+app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/payment", paymentRouter)
 
 app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({

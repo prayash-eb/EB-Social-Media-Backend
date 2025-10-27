@@ -2,7 +2,7 @@ import NotificationService from "../services/notification.service.js";
 import cron from "node-cron";
 
 class NotificationCron {
-    constructor(private notificationService: NotificationService) { }
+    constructor(private notificationService: NotificationService) {}
 
     public getNotificationMessage = () => {
         const messages = [
@@ -15,19 +15,19 @@ class NotificationCron {
             "New updates just landed in your feed!",
             "Your friends might be waiting to hear from you — start chatting!",
             "Don’t miss out on trending posts — they’re blowing up right now!",
-            "Come back and explore the latest from your community."
-        ]
-        return messages[Math.floor(Math.random() * messages.length)] as string
-    }
+            "Come back and explore the latest from your community.",
+        ];
+        return messages[Math.floor(Math.random() * messages.length)] as string;
+    };
 
     public start() {
-        const message = this.getNotificationMessage()
+        const message = this.getNotificationMessage();
         cron.schedule("0 * * * *", async () => {
             console.log("[Cron] Running hourly notification job...");
-            await this.notificationService.sendNotificationToAllUsers(message)
-        })
+            await this.notificationService.sendNotificationToAllUsers(message);
+        });
     }
 }
 
 // create a notificationObject to trigger cron
-export const notificationCron = new NotificationCron(new NotificationService())
+export const notificationCron = new NotificationCron(new NotificationService());

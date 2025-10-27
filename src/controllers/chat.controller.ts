@@ -2,7 +2,7 @@ import type ChatService from "../services/chat.service.js";
 import type { Request, Response, NextFunction } from "express";
 
 export default class ChatController {
-    constructor(private chatService: ChatService) {}
+    constructor(private chatService: ChatService) { }
     public sendMessage = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const sender = req.user?.id!;
@@ -13,6 +13,24 @@ export default class ChatController {
             next(error);
         }
     };
+
+    public sendImageMessage = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const sender = req.user?.id!;
+            const imageUrl = req.cloudinary?.secure_url!;
+            const { receiver, price } = req.body;
+            const messageResult = await this.chatService.sendImageMessage(
+                sender,
+                receiver,
+                imageUrl,
+                price
+            );
+            res.status(200).json({ ...messageResult });
+        } catch (error) {
+            next(error);
+        }
+    };
+
     public getConversationsList = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
@@ -30,8 +48,8 @@ export default class ChatController {
         try {
             const userId = req.user?.id!;
             const conversationId = req.params.conversationId!;
-            const conversation = await this.chatService.getMessages(userId, conversationId);
-            res.status(200).json({ message: "Messages Fetched Successfully", conversation });
+            const messages = await this.chatService.getMessages(userId, conversationId);
+            res.status(200).json({ message: "Messages Fetched Successfully", messages });
         } catch (error) {
             next(error);
         }

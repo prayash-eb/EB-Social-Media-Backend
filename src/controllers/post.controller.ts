@@ -17,7 +17,7 @@ export default class PostController {
     };
     public editUserPost = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            let postId = req.params.id;
+            const postId = req.params.id;
             if (!postId) {
                 return res.status(400).json({ message: "Please provide post id." });
             }

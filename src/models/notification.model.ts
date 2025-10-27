@@ -1,12 +1,12 @@
 import mongoose, { Document, model, Schema } from "mongoose";
 
-type NotificationType = "LIKE" | "COMMENT" | "FOLLOW" | "SYSTEM"
+type NotificationType = "LIKE" | "COMMENT" | "FOLLOW" | "SYSTEM";
 
 export interface INotification {
     userId: mongoose.Types.ObjectId;
     content: string;
     isRead: boolean;
-    type: NotificationType
+    type: NotificationType;
     createdAt: Date;
 }
 
@@ -14,25 +14,25 @@ const notificationSchema = new Schema<INotification>({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
-        ref: "User"
+        ref: "User",
     },
     content: {
         type: String,
-        required: true
+        required: true,
     },
     type: {
         type: String,
-        required: true
+        required: true,
     },
     isRead: {
         type: Boolean,
-        default: false
+        default: false,
     },
     createdAt: {
         type: Date,
-        default: Date.now
-    }
-})
+        default: Date.now,
+    },
+});
 
-const Notification = model<INotification>("Notification", notificationSchema)
-export default Notification
+const Notification = model<INotification>("Notification", notificationSchema);
+export default Notification;

@@ -23,21 +23,17 @@ const postRouter = Router();
 const postService = new PostService();
 const postController = new PostController(postService);
 
-// local Image uploader middleware
-const localFileUploader = createLocalImageUploader;
-const remoteFileUploader = createRemoteImageUploader;
-
 postRouter.post(
     "/create",
     AuthenticateAccessToken,
-    remoteFileUploader,
+    createRemoteImageUploader({ folder: "post_images" }),
     validateBody(createPostSchema),
     postController.createUserPost
 );
 postRouter.post(
     "/edit/:id",
     AuthenticateAccessToken,
-    remoteFileUploader,
+    createRemoteImageUploader({ folder: "post_images" }),
     validateBody(editPostSchema),
     postController.editUserPost
 );

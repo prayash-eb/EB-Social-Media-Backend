@@ -11,6 +11,7 @@ export const validateBody = (schema: ZodObject<any>) => {
             req.body = parsedData;
             next();
         } catch (error) {
+            console.log(error);
             if (error instanceof ZodError) {
                 const errors = error.issues.map((e) => ({ path: e.path, message: e.message }));
                 return res.status(400).json({ message: "Input Validation Error", errors });

@@ -25,7 +25,9 @@ export interface IUser extends Document {
     followings: [mongoose.Types.ObjectId];
     resetPasswordToken: string | undefined;
     resetPasswordTokenExpiry: Date | undefined;
-    isEmailVerified: Boolean;
+    isEmailVerified: boolean;
+    stripeCustomerId?: string;
+    stripeAccountId?: string;
     emailVerificationToken: string | undefined;
     emailVerificationTokenExpiry: Date | undefined;
 }

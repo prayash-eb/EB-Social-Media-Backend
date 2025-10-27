@@ -30,9 +30,7 @@ export default class AuthService {
         await Session.deleteOne({ userId, jti });
     };
     public logoutAllDevices = async (userId: mongoose.Types.ObjectId) => {
-        const result = await Session.deleteMany(
-            { userId }
-        );
+        const result = await Session.deleteMany({ userId });
         return result.deletedCount;
     };
     public refreshToken = async (userId: mongoose.Types.ObjectId, jti: string) => {
@@ -76,13 +74,13 @@ export default class AuthService {
             emailVerificationTokenExpiry: new Date(Date.now() + 5 * 60 * 1000),
         });
 
-        const verificationLink = `${process.env.BASE_URL}/auth/verify-email?token=${emailVerificationToken}`
+        const verificationLink = `${process.env.BASE_URL}/auth/verify-email?token=${emailVerificationToken}`;
 
         sendVerificationEmail({
             name: savedUser.name,
             email: savedUser.email,
             verificationLink,
-            expiryTime: savedUser.emailVerificationTokenExpiry!
+            expiryTime: savedUser.emailVerificationTokenExpiry!,
         });
         return savedUser;
     };

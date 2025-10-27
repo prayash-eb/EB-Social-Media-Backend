@@ -1,10 +1,13 @@
-import User from "../models/user.model.js"
-import Notification, { type INotification } from "../models/notification.model.js"
-import type mongoose from "mongoose"
+import User from "../models/user.model.js";
+import Notification, { type INotification } from "../models/notification.model.js";
+import type mongoose from "mongoose";
 
 export default class NotificationService {
-
-    public getNotifications = async (userId: mongoose.Types.ObjectId, page: number = 1, limit: number = 20) => {
+    public getNotifications = async (
+        userId: mongoose.Types.ObjectId,
+        page: number = 1,
+        limit: number = 20
+    ) => {
         const skip = (page - 1) * limit;
 
         const total = await Notification.countDocuments({ userId });
@@ -13,7 +16,7 @@ export default class NotificationService {
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
-            .lean()
+            .lean();
 
         const totalPages = Math.ceil(total / limit);
 
@@ -23,18 +26,18 @@ export default class NotificationService {
             currentPage: page,
             totalPages,
             hasNextPage: page < totalPages,
-            hasPrevPage: page > 1
+            hasPrevPage: page > 1,
         };
-    }
+    };
 
     public sendNotificationToAllUsers = async (message: string) => {
-        const users = await User.find({}, { _id: 1 })
+        const users = await User.find({}, { _id: 1 });
         const notifications = users.map((user) => ({
             userId: user._id,
             content: message,
-            type: "SYSTEM"
-        }))
-        await Notification.insertMany(notifications)
+            type: "SYSTEM",
+        }));
+        await Notification.insertMany(notifications);
         console.log(`[NotificationService] Sent ${notifications.length} notifications`);
-    }
+    };
 }

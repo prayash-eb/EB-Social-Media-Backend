@@ -63,42 +63,43 @@ export const createLocalImageUploader = (options?: LocalFileUploadOptions) => {
     }).single("image");
 };
 
-export const createRemoteImageUploader = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    uploadBuffer.single("image")(req, res, (error) => {
-        if (error) {
-            next(error);
-        }
-        if (!req.file) {
-            // No image uploaded, just continue
-            return next();
-        }
-        if (req.file && req.file.size > 2 * 1024 * 1024) {
-            // 2MB
-            return next(new Error("File too large"));
-        }
+interface RemoteUploadOptions {
+    folder?: "inbox_images" | "profile_images" | "post_images";
+    maxFileSize?: number;
+}
 
-        try {
-            const fileStream = Readable.from(req.file.buffer);
-            const cloudStream = cloudinaryCloud.uploader.upload_stream(
-                {
-                    folder: "post_images",
-                    resource_type: "image",
-                },
-                (error, result) => {
-                    if (error) return next(error);
-                    if (!result) return next(new Error("Cloudinary upload failed"));
-                    req.cloudinary = result;
-                    next();
-                }
-            );
-            fileStream.pipe(cloudStream);
-        } catch (error) {
-            console.log("Middleware", error);
-            next(error);
-        }
-    });
+export const createRemoteImageUploader = (options?: RemoteUploadOptions) => {
+    const folder = options?.folder || "uploads"; // default folder
+    const maxFileSize = options?.maxFileSize || 2 * 1024 * 1024; // 2MB default
+
+    return (req: Request, res: Response, next: NextFunction) => {
+        uploadBuffer.single("image")(req, res, (error) => {
+            if (error) return next(error);
+            if (!req.file) return next();
+
+            if (req.file.size > maxFileSize) {
+                return next(new Error("File too large"));
+            }
+
+            try {
+                const fileStream = Readable.from(req.file.buffer);
+                const cloudStream = cloudinaryCloud.uploader.upload_stream(
+                    {
+                        folder,
+                        resource_type: "image",
+                    },
+                    (error, result) => {
+                        if (error) return next(error);
+                        if (!result) return next(new Error("Cloudinary upload failed"));
+
+                        req.cloudinary = result;
+                        next();
+                    }
+                );
+                fileStream.pipe(cloudStream);
+            } catch (err) {
+                next(err);
+            }
+        });
+    };
 };

@@ -1,9 +1,14 @@
 import mongoose, { Document, model, Schema, Types } from "mongoose";
+import { boolean } from "zod";
 
 export interface IMessage extends Document {
     sender: Types.ObjectId;
     receiver: Types.ObjectId;
     message: string;
+    imageUrl?: string;
+    isLocked?: boolean;
+    price?: number;
+    isPaidContent?: boolean;
     conversationId: Types.ObjectId;
     isRead: boolean;
     deletedFor: Types.ObjectId[];
@@ -32,7 +37,20 @@ const messageSchema = new Schema<IMessage>(
         },
         message: {
             type: String,
-            required: true,
+        },
+        imageUrl: {
+            type: String,
+        },
+        isLocked: {
+            type: Boolean,
+            default: true,
+        },
+        isPaidContent: {
+            type: boolean,
+            default: false,
+        },
+        price: {
+            type: Number,
         },
         conversationId: {
             type: Schema.Types.ObjectId,

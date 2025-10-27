@@ -5,7 +5,7 @@ export interface ISession extends Document {
     jti: string;
     device: string;
     expiresAt: Date;
-    valid: Boolean;
+    valid: boolean;
 }
 
 interface ISessionModel extends Model<ISession> {

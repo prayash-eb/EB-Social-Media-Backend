@@ -19,12 +19,14 @@ export default class ChatService {
         // Sort participants to keep consistency
         const participants = [senderId, receiverObjectId].sort();
 
-        // Find or create conversation safely using upsert
-        let conversation = await Conversation.findOneAndUpdate(
-            { participants: { $all: participants } },
-            { $setOnInsert: { participants } },
-            { new: true, upsert: true }
-        );
+        // Try to find existing conversation
+        let conversation = await Conversation.findOne({ participants: { $all: participants } });
+
+        if (!conversation) {
+            // Create new conversation
+            conversation = new Conversation({ participants });
+            await conversation.save();
+        }
 
         // If previously deleted, re-activate for sender
         if (conversation.deletedFor.includes(senderId)) {
@@ -53,6 +55,61 @@ export default class ChatService {
             receiver: newMessage.receiver,
             conversationId: newMessage.conversationId,
             message: newMessage.message,
+        };
+    };
+
+    public sendImageMessage = async (
+        senderId: mongoose.Types.ObjectId,
+        receiverId: string,
+        imageUrl: string,
+        price: number
+    ) => {
+        const receiverObjectId = new mongoose.Types.ObjectId(receiverId);
+        const receiverExist = await User.findById(receiverObjectId);
+
+        if (!receiverExist) {
+            throw new AppError("Receiver does not exist", 400, "CHAT_MODULE");
+        }
+
+        // Sort participants to keep consistency
+        const participants = [senderId, receiverObjectId].sort();
+
+        // Try to find existing conversation
+        let conversation = await Conversation.findOne({ participants: { $all: participants } });
+
+        if (!conversation) {
+            // Create new conversation
+            conversation = new Conversation({ participants });
+            await conversation.save();
+        }
+
+        // If previously deleted, re-activate for sender
+        if (conversation.deletedFor.includes(senderId)) {
+            await Conversation.updateOne(
+                { _id: conversation._id },
+                { $pull: { deletedFor: senderId } }
+            );
+        }
+
+        // Create and save the message
+        const newImageMessage = new Message({
+            sender: senderId,
+            receiver: receiverObjectId,
+            imageUrl,
+            price,
+            isPaidContent: true,
+            conversationId: conversation._id,
+        });
+
+        await newImageMessage.save();
+
+        conversation.updatedAt = new Date();
+
+        return {
+            sender: newImageMessage.sender,
+            receiver: newImageMessage.receiver,
+            conversationId: newImageMessage.conversationId,
+            isPaidContent: newImageMessage.isPaidContent,
         };
     };
 
@@ -210,7 +267,7 @@ export default class ChatService {
 
     public deleteConversation = async (userId: mongoose.Types.ObjectId, conversationId: string) => {
         const conversationObjectId = new mongoose.Types.ObjectId(conversationId);
-        let conversation = await Conversation.findById(conversationObjectId);
+        const conversation = await Conversation.findById(conversationObjectId);
         if (!conversation) {
             throw new AppError("Conversation Not Found", 400, "CHAT_MODULE");
         }

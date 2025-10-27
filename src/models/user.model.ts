@@ -83,6 +83,12 @@ const userSchema = new Schema<IUserModel>(
             default: false,
         },
 
+        stripeCustomerId: {
+            type: String,
+        },
+        stripeAccountId: {
+            type: String,
+        },
         resetPasswordToken: String,
         resetPasswordTokenExpiry: Date,
         emailVerificationToken: String,
