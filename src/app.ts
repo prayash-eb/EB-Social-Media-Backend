@@ -8,6 +8,7 @@ import postRouter from "./routes/post.routes.js";
 import followRouter from "./routes/follower.route.js";
 import chatRouter from "./routes/chat.route.js";
 import emailTemplateRouter from "./routes/email-template.route.js";
+import notificationRouter from "./routes/notification.route.js";
 
 const app: Application = express();
 
@@ -21,6 +22,7 @@ app.use("/api/v1/post", postRouter);
 app.use("/api/v1", followRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/email-template", emailTemplateRouter);
+app.use('/api/v1/notifications', notificationRouter)
 
 app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({
