@@ -162,6 +162,9 @@ export default class AuthService {
         if (!user) {
             throw new AppError("User not found", 404, "AUTH_MODULE");
         }
+        if (user?.isEmailVerified) {
+            throw new AppError("Email already verified", 400, "AUTH_SERVICE")
+        }
 
         // generate token
         const emailVerificationToken = uuidv4();
