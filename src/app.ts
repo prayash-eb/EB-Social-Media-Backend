@@ -16,11 +16,10 @@ const app: Application = express();
 app.use(cors());
 app.use((req: Request, res: Response, next: NextFunction) => {
     if (req.originalUrl === "/api/v1/payment/stripe/webhook") {
-        next()
+        next();
     } else {
-        express.json()(req, res, next)
+        express.json()(req, res, next);
     }
-
 });
 app.use(express.urlencoded({ extended: false }));
 
