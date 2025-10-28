@@ -41,7 +41,7 @@ export default class ChatService {
             sender: senderId,
             receiver: receiverObjectId,
             message,
-            conversationId: conversation._id
+            conversationId: conversation._id,
         });
 
         await newMessage.save();

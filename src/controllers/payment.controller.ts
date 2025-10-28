@@ -1,4 +1,4 @@
-import type StripeService from "../services/stripe.service.js";
+import type StripeService from "../providers/stripe.provider.js";
 import type { NextFunction, Request, Response } from "express";
 import Stripe from "stripe";
 

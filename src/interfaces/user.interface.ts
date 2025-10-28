@@ -28,6 +28,8 @@ export interface IUser extends Document {
     isEmailVerified: boolean;
     stripeCustomerId?: string;
     stripeAccountId?: string;
+    subscriptionId?: string;
+    subscriptionStatus: string;
     emailVerificationToken: string | undefined;
     emailVerificationTokenExpiry: Date | undefined;
 }

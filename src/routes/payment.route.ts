@@ -1,7 +1,7 @@
 import PaymentController from "../controllers/payment.controller.js";
 import { AuthenticateAccessToken } from "../middlewares/auth.middleware.js";
 import { validateBody } from "../middlewares/validation.middleware.js";
-import StripeService from "../services/stripe.service.js";
+import StripeService from "../providers/stripe.provider.js";
 import { Router } from "express";
 import { createPaymentSchema } from "../validators/payment.validator.js";
 import express from "express";
