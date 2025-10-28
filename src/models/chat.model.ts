@@ -43,7 +43,7 @@ const messageSchema = new Schema<IMessage>(
         },
         isLocked: {
             type: Boolean,
-            default: true,
+            default: false,
         },
         isPaidContent: {
             type: boolean,

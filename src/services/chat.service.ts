@@ -41,7 +41,7 @@ export default class ChatService {
             sender: senderId,
             receiver: receiverObjectId,
             message,
-            conversationId: conversation._id,
+            conversationId: conversation._id
         });
 
         await newMessage.save();
@@ -98,6 +98,7 @@ export default class ChatService {
             imageUrl,
             price,
             isPaidContent: true,
+            isLocked: true,
             conversationId: conversation._id,
         });
 

@@ -50,7 +50,7 @@ authRouter.get(
     authController.sendUserVerificationEmail
 );
 
-authRouter.patch(
+authRouter.get(
     "/verify-email",
     validateQuery(userEmailVerificationTokenSchema),
     authController.verifyUserEmail
