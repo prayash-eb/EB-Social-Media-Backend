@@ -1,4 +1,4 @@
-import express, { type Application, type Request, type Response } from "express";
+import express, { type Application, type NextFunction, type Request, type Response } from "express";
 import cors from "cors";
 import { errorHandler } from "./middlewares/errorHandler.js";
 
@@ -14,7 +14,14 @@ import paymentRouter from "./routes/payment.route.js";
 const app: Application = express();
 
 app.use(cors());
-app.use(express.json());
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (req.originalUrl === "/api/v1/payment/stripe/webhook") {
+        next()
+    } else {
+        express.json()(req, res, next)
+    }
+
+});
 app.use(express.urlencoded({ extended: false }));
 
 app.use("/api/v1/auth", authRouter);
@@ -24,7 +31,7 @@ app.use("/api/v1", followRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/email-template", emailTemplateRouter);
 app.use("/api/v1/notifications", notificationRouter);
-app.use("/api/v1/payment", paymentRouter)
+app.use("/api/v1/payment", paymentRouter);
 
 app.get("/", (req: Request, res: Response) => {
     return res.status(200).json({
