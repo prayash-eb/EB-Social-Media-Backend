@@ -99,19 +99,12 @@ export default class StripeService {
                 }
                 tx.status = "succeeded";
                 await tx?.save();
-                await Message.findByIdAndUpdate(
-                    { _id: tx?.messageId },
-                    {
-                        $set: {
-                            isLocked: false,
-                        },
-                    }
-                );
+                await Message.findByIdAndUpdate(tx.messageId, { $set: { isLocked: false } });
                 break;
             }
             case "payment_intent.payment_failed": {
-                console.log("Payment Failed");
                 const pi = event.data.object;
+                console.log("Payment failed reason:", pi.last_payment_error?.message);
                 const tx = await Transaction.findOne({ stripePaymentIntentId: pi.id });
                 if (!tx) {
                     throw new AppError("Transaction not found", 404, "STRIPE_WEBHOOK");
