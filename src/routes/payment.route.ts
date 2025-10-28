@@ -4,6 +4,7 @@ import { validateBody } from "../middlewares/validation.middleware.js";
 import StripeService from "../services/stripe.service.js";
 import { Router } from "express";
 import { createPaymentSchema } from "../validators/payment.validator.js";
+import express from "express";
 
 const paymentRouter = Router();
 const paymentService = new StripeService();
@@ -16,5 +17,11 @@ paymentRouter.post(
     paymentController.createPaymentIntent
 );
 paymentRouter.get("/history", AuthenticateAccessToken, paymentController.getPaymentHistory);
+
+paymentRouter.post(
+    "/stripe/webhook",
+    express.raw({ type: "application/json" }),
+    paymentController.handlePaymentWebhook
+);
 
 export default paymentRouter;
