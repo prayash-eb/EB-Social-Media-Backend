@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import { AppError } from "../libs/customError.js";
 import Transaction, { type ITransaction } from "../models/transactions.model.js";
 import { Message } from "../models/chat.model.js";
+import { object } from "zod";
 
 export default class StripeService {
     private stripe: Stripe;
@@ -38,7 +39,8 @@ export default class StripeService {
             throw new AppError("Sender or Receiver doesnot exist", 404, "STRIPE_SERVICE");
         }
         const message = await Message.findOne({
-            _id: messageId, isLocked: true
+            _id: messageId,
+            isLocked: true,
         });
 
         if (!message) {
@@ -47,20 +49,25 @@ export default class StripeService {
 
         const transactionPending = await Transaction.findOne({
             messageId: messageId,
-            status: "pending"
-        })
+            status: "pending",
+        });
         if (transactionPending) {
-            throw new AppError("Transaction Pending. Wait for some time and try again if transaction fails.", 409, "STRIPE_SERVICE")
+            throw new AppError(
+                "Transaction Pending. Wait for some time and try again if transaction fails.",
+                409,
+                "STRIPE_SERVICE"
+            );
         }
 
         const customerId = await this.ensureCustomer(receiverId);
 
         const paymentIntent = await this.stripe.paymentIntents.create({
             customer: customerId,
-            amount: Math.round(message?.price! * 100),
+            amount: Math.round(message?.price! * 10),
             currency: "usd",
             automatic_payment_methods: {
                 enabled: true,
+                allow_redirects: "never",
             },
             transfer_data: { destination: sender.stripeAccountId! },
             metadata: {
@@ -81,20 +88,46 @@ export default class StripeService {
 
         return paymentIntent.client_secret;
     };
-    public handleWebhook = async (event: any) => {
-        if (event.type === "payment_intent.succeeded") {
-            const pi = event.data.object;
-            const tx = await Transaction.findOne({ stripePaymentIntentId: pi.id });
-            if (tx) tx.status = "succeeded";
-            await tx?.save();
-            await Message.findByIdAndUpdate(
-                { _id: tx?.messageId },
-                {
-                    $set: {
-                        isLocked: false,
-                    },
+    public handleWebhook = async (event: Stripe.Event) => {
+        switch (event.type) {
+            case "payment_intent.succeeded": {
+                console.log("Payment Succeeded for paymentIntent Id:", event.data.object.id);
+                const pi = event.data.object;
+                const tx = await Transaction.findOne({ stripePaymentIntentId: pi.id });
+                if (!tx) {
+                    throw new AppError("Transaction not found", 404, "STRIPE_WEBHOOK");
                 }
-            );
+                tx.status = "succeeded";
+                await tx?.save();
+                await Message.findByIdAndUpdate(
+                    { _id: tx?.messageId },
+                    {
+                        $set: {
+                            isLocked: false,
+                        },
+                    }
+                );
+                break;
+            }
+            case "payment_intent.payment_failed": {
+                console.log("Payment Failed");
+                const pi = event.data.object;
+                const tx = await Transaction.findOne({ stripePaymentIntentId: pi.id });
+                if (!tx) {
+                    throw new AppError("Transaction not found", 404, "STRIPE_WEBHOOK");
+                }
+                tx.status = "failed";
+                await tx?.save();
+                break;
+            }
+
+            case "payment_intent.created": {
+                console.log("Payment Intent Created with paymentIntentId:", event.data.object.id);
+                break;
+            }
+            default: {
+                console.log("Unhandled event", event.type);
+            }
         }
     };
 

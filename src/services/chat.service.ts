@@ -156,20 +156,18 @@ export default class ChatService {
             .populate("sender", "name")
             .populate("receiver", "name");
 
-
         const filteredMessages = messages.map((message) => {
             if (message.isLocked) {
                 return {
                     _id: message._id,
                     isPaidContent: message.isPaidContent,
                     price: message.price,
-                    isLocked: message.isLocked
-                }
+                    isLocked: message.isLocked,
+                };
+            } else {
+                return message;
             }
-            else {
-                return message
-            }
-        })
+        });
 
         return filteredMessages;
     };
