@@ -2,7 +2,7 @@ import type ChatService from "../services/chat.service.js";
 import type { Request, Response, NextFunction } from "express";
 
 export default class ChatController {
-    constructor(private chatService: ChatService) { }
+    constructor(private chatService: ChatService) {}
     public sendMessage = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const sender = req.user?.id!;
