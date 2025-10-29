@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import User from "../models/user.model.js";
 import { AppError } from "../libs/customError.js";
 import stripe from "../libs/stripe.js";
+import Subscription from "../models/subscription.model.js";
 
 export const requireActiveSubscription = async (
     req: Request,
@@ -9,19 +10,18 @@ export const requireActiveSubscription = async (
     next: NextFunction
 ) => {
     try {
-        const user = await User.findById(req.user?.id);
-        if (!user) {
-            throw new AppError("User not found", 404, "SUBSCRIPTION_MIDDLEWARE");
+        const subscription = await Subscription.findOne({
+            userId: req.user?.id,
+        });
+
+        if (!subscription) {
+            throw new AppError("Subscription Not Found", 403, "SUBSCRIPTION_MIDDLEWARE");
         }
-        if (!user.subscriptionId) {
-            throw new AppError(
-                "Please subscribe our app before using this feature",
-                403,
-                "SUBSCRIPTION_MIDDLEWARE"
-            );
-        }
-        const subscription = await stripe.subscriptions.retrieve(user.subscriptionId);
-        if (!["active", "trialing"].includes(subscription.status)) {
+
+        const validateSubscription = await stripe.subscriptions.retrieve(
+            subscription.stripeSubscriptionId
+        );
+        if (!["active", "trialing"].includes(validateSubscription.status)) {
             throw new AppError(
                 "Subscription is inactive or expired",
                 403,

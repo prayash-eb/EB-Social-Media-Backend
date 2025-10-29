@@ -1,6 +1,4 @@
-import type mongoose from "mongoose";
 import Stripe from "stripe";
-import User from "../models/user.model.js";
 import { AppError } from "../libs/customError.js";
 import Transaction, { type ITransaction } from "../models/transactions.model.js";
 import { Message } from "../models/chat.model.js";
@@ -8,44 +6,104 @@ import stripe from "../libs/stripe.js";
 import type { IPaymentProvider } from "../interfaces/payment-provider.interface.js";
 
 export default class StripeProvider implements IPaymentProvider {
-
+    public constructEvent = async (body: string, signature: string) => {
+        return await stripe.webhooks.constructEvent(
+            body,
+            signature,
+            process.env.STRIPE_WEBHOOK_SECRET!
+        );
+    };
     public createCustomer = async (email: string): Promise<string> => {
         const customer = await stripe.customers.create({ email });
         return customer.id;
     };
-    public createSubscription = async (customerId: string, priceId: string): Promise<{ subscriptionId: string; clientSecret: string; subscriptionStatus: string }> => {
+    public createSubscription = async (
+        customerId: string,
+        userId: string,
+        paymentMethodId: string,
+        priceId: string
+    ): Promise<{
+        subscriptionId: string;
+        clientSecret: string | null;
+        subscriptionStatus: string;
+        currentPeriodStart: Date;
+        currentPeriodEnd: Date;
+        latestInvoiceId: string | null;
+    }> => {
+        // Attach the payment method to customer (if not already attached)
+        await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
+
+        // Set as default payment method for invoices
+        await stripe.customers.update(customerId, {
+            invoice_settings: { default_payment_method: paymentMethodId },
+        });
+
+        // Create the subscription
         const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [{ price: priceId }],
-            payment_behavior: "default_incomplete",
+            payment_settings: {
+                payment_method_types: ["card"],
+                save_default_payment_method: "on_subscription",
+            },
             expand: ["latest_invoice.payment_intent"],
+            metadata: {
+                userId,
+            },
         });
 
-        let clientSecret: string = "";
-        if (subscription.latest_invoice && typeof subscription.latest_invoice !== "string") {
-            const invoice = subscription.latest_invoice as Stripe.Invoice & {
-                payment_intent: Stripe.PaymentIntent;
-            };
-            clientSecret = invoice.payment_intent.client_secret as string;
+        // Safely extract clientSecret if payment_intent exists
+        let clientSecret: string | null = null;
+        let latestInvoiceId: string | null = null;
+
+        if (subscription.latest_invoice) {
+            const invoice =
+                typeof subscription.latest_invoice === "string"
+                    ? await stripe.invoices.retrieve(subscription.latest_invoice, {
+                          expand: ["payment_intent"],
+                      })
+                    : subscription.latest_invoice;
+
+            latestInvoiceId = invoice.id;
+
+            // if (invoice.payment_intent) {
+            //     const paymentIntent = typeof invoice.payment_intent === 'string'
+            //         ? await stripe.paymentIntents.retrieve(invoice.payment_intent)
+            //         : invoice.payment_intent;
+
+            //     // ALWAYS return client_secret if payment_intent exists
+            //     // The frontend will decide whether to confirm it
+            //     clientSecret = paymentIntent.client_secret || null;
+
+            //     console.log('Payment Intent Status:', paymentIntent.status);
+            //     console.log('Client Secret:', clientSecret);
+            // }
         }
 
-        return {
-            subscriptionId: subscription.id, subscriptionStatus: subscription.status, clientSecret
-        };
-    }
+        const currentPeriodStart = new Date(
+            subscription.items.data[0]?.current_period_start! * 1000
+        );
+        const currentPeriodEnd = new Date(subscription.items.data[0]?.current_period_end! * 1000);
 
-    public attachPaymentMethod = async (customerId: string, paymentMethodId: string): Promise<void> => {
+        return {
+            subscriptionId: subscription.id,
+            subscriptionStatus: subscription.status,
+            clientSecret,
+            currentPeriodStart,
+            currentPeriodEnd,
+            latestInvoiceId,
+        };
+    };
+
+    public attachPaymentMethod = async (
+        customerId: string,
+        paymentMethodId: string
+    ): Promise<void> => {
         await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
         await stripe.customers.update(customerId, {
             invoice_settings: { default_payment_method: paymentMethodId },
         });
-    }
-
-    public updateDefaultPaymentMethod = async (customerId: string, paymentMethodId: string): Promise<void> => {
-        await stripe.customers.update(customerId, {
-            invoice_settings: { default_payment_method: paymentMethodId },
-        });
-    }
+    };
 
     public cancelSubscription = async (subscriptionId: string, immediately = true) => {
         if (immediately) {
@@ -53,9 +111,12 @@ export default class StripeProvider implements IPaymentProvider {
         } else {
             await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
         }
-    }
+    };
 
-    public updateSubscription = async (subscriptionId: string, newPriceId: string): Promise<{ subscriptionId: string; clientSecret: string; }> => {
+    public updateSubscription = async (
+        subscriptionId: string,
+        newPriceId: string
+    ): Promise<{ subscriptionId: string; clientSecret: string }> => {
         const updated = await stripe.subscriptions.update(subscriptionId, {
             items: [{ price: newPriceId }],
             expand: ["latest_invoice.payment_intent"],
@@ -70,9 +131,13 @@ export default class StripeProvider implements IPaymentProvider {
         }
 
         return { subscriptionId: updated.id, clientSecret };
-    }
+    };
 
-    public createPaymentIntent = async (customerId: string, price: number, messageSenderId: string): Promise<{ clientSecret: string, paymentIntentId: string }> => {
+    public createPaymentIntent = async (
+        customerId: string,
+        price: number,
+        messageSenderId: string
+    ): Promise<{ clientSecret: string; paymentIntentId: string }> => {
         const paymentIntent = await stripe.paymentIntents.create({
             customer: customerId,
             amount: Math.round(price * 10),
@@ -90,15 +155,20 @@ export default class StripeProvider implements IPaymentProvider {
 
         return {
             clientSecret: paymentIntent.client_secret!,
-            paymentIntentId: paymentIntent.id
-        }
-    }
-    public handleWebHook = async (event: Stripe.Event): Promise<void> => {
+            paymentIntentId: paymentIntent.id,
+        };
+    };
+    public handleWebHook = async (signature: string, body: string): Promise<void> => {
+        const event = Stripe.webhooks.constructEvent(
+            body,
+            signature,
+            process.env.STRIPE_WEBHOOK_SECRET!
+        );
         switch (event.type) {
             case "payment_intent.succeeded": {
                 console.log("Payment Succeeded for paymentIntent Id:", event.data.object.id);
-                const pi = event.data.object;
-                const tx = await Transaction.findOne({ stripePaymentIntentId: pi.id });
+                const paymentIntentId = event.data.object.id;
+                const tx = await Transaction.findOne({ stripePaymentIntentId: paymentIntentId });
                 if (!tx) {
                     throw new AppError("Transaction not found", 404, "STRIPE_WEBHOOK");
                 }
@@ -127,11 +197,5 @@ export default class StripeProvider implements IPaymentProvider {
                 console.log("Unhandled event", event.type);
             }
         }
-    };
-
-    public getTransactions = async (
-        userId: mongoose.Types.ObjectId
-    ): Promise<ITransaction[]> => {
-        return await Transaction.find({ userId }).sort({ createdAt: -1 });
     };
 }

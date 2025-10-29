@@ -1,3 +1,4 @@
+import Stripe from "stripe";
 import type SubscriptionService from "../services/subscription.service.js";
 import type { Request, Response, NextFunction } from "express";
 export default class SubscriptionController {
@@ -15,13 +16,27 @@ export default class SubscriptionController {
             next(error);
         }
     };
-    public updateUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
+
+    public attachPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id!;
             const { paymentMethodId } = req.body;
-            const subscription = await this.subscriptionService.updateSubscription(
+            const subscription = await this.subscriptionService.attachPaymentMethod(
                 userId,
                 paymentMethodId
+            );
+            res.status(200).json({ message: "Payment Method Updated Successfully", subscription });
+        } catch (error) {
+            next(error);
+        }
+    };
+    public updateUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const { newPriceId } = req.body;
+            const subscription = await this.subscriptionService.updateSubscription(
+                userId,
+                newPriceId
             );
             res.status(200).json({ message: "Subscription Updated Successfully", subscription });
         } catch (error) {
@@ -37,6 +52,42 @@ export default class SubscriptionController {
                 paymentMethodId
             );
             res.status(200).json({ message: "Subscription Updated Successfully", subscription });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public createPaymentIntent = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const receiverId = req.user?.id!;
+            const { senderId, messageId } = req.body;
+            const clientSecret = await this.subscriptionService.createPaymentIntent(
+                senderId,
+                receiverId,
+                messageId
+            );
+            res.status(200).json({ clientSecret });
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public handleWebHookEvents = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const signature = req.headers["stripe-signature"] as string;
+
+            await this.subscriptionService.handleWebHook(req.body, signature);
+            res.status(200);
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    public getTransactionHistory = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = req.user?.id!;
+            const transactions = await this.subscriptionService.getTransactions(userId);
+            res.status(200).json({ message: "Transactions Fetched Successfully", transactions });
         } catch (error) {
             next(error);
         }

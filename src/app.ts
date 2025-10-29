@@ -9,14 +9,13 @@ import followRouter from "./routes/follower.route.js";
 import chatRouter from "./routes/chat.route.js";
 import emailTemplateRouter from "./routes/email-template.route.js";
 import notificationRouter from "./routes/notification.route.js";
-import paymentRouter from "./routes/payment.route.js";
 import subscriptionRouter from "./routes/subscription.route.js";
 
 const app: Application = express();
 
 app.use(cors());
 app.use((req: Request, res: Response, next: NextFunction) => {
-    if (req.originalUrl === "/api/v1/payment/stripe/webhook") {
+    if (req.originalUrl === "/api/v1/subscription/stripe/webhook") {
         next();
     } else {
         express.json()(req, res, next);
@@ -31,7 +30,6 @@ app.use("/api/v1", followRouter);
 app.use("/api/v1/chat", chatRouter);
 app.use("/api/v1/email-template", emailTemplateRouter);
 app.use("/api/v1/notifications", notificationRouter);
-app.use("/api/v1/payment", paymentRouter);
 app.use("/api/v1/subscription/", subscriptionRouter);
 
 app.get("/", (req: Request, res: Response) => {
