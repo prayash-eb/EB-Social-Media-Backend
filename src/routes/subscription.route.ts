@@ -5,7 +5,6 @@ import StripeProvider from "../providers/stripe.provider.js";
 import { AuthenticateAccessToken } from "../middlewares/auth.middleware.js";
 import express from "express";
 import { requireActiveSubscription } from "../middlewares/subscription.middleware.js";
-import { StripeWebhookService } from "../webhooks/stripe.webhook.js";
 
 const subscriptionRouter = Router();
 

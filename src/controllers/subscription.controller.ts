@@ -1,11 +1,20 @@
-import Stripe from "stripe";
 import type SubscriptionService from "../services/subscription.service.js";
 import type { Request, Response, NextFunction } from "express";
+import { AppError } from "../libs/customError.js";
+import mongoose from "mongoose";
 export default class SubscriptionController {
     constructor(private subscriptionService: SubscriptionService) {}
+
+    private validateUser(req: Request): mongoose.Types.ObjectId {
+        if (!req.user?.id) {
+            throw new AppError("User not authenticated", 401, "SUBSCRIPTION_CONTROLLER");
+        }
+        return req.user.id;
+    }
+
     public createUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!;
+            const userId = this.validateUser(req);
             const { paymentMethodId } = req.body;
             const subscription = await this.subscriptionService.createSubscription(
                 userId,
@@ -19,7 +28,7 @@ export default class SubscriptionController {
 
     public attachPaymentMethod = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!;
+            const userId = this.validateUser(req);
             const { paymentMethodId } = req.body;
             const subscription = await this.subscriptionService.attachPaymentMethod(
                 userId,
@@ -30,9 +39,10 @@ export default class SubscriptionController {
             next(error);
         }
     };
+
     public updateUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!;
+            const userId = this.validateUser(req);
             const { newPriceId } = req.body;
             const subscription = await this.subscriptionService.updateSubscription(
                 userId,
@@ -43,15 +53,17 @@ export default class SubscriptionController {
             next(error);
         }
     };
+
     public cancelUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!;
-            const { paymentMethodId } = req.body;
-            const subscription = await this.subscriptionService.cancelSubscription(
-                userId,
-                paymentMethodId
-            );
-            res.status(200).json({ message: "Subscription Updated Successfully", subscription });
+            const userId = this.validateUser(req);
+            const { immediately = true } = req.body;
+            await this.subscriptionService.cancelSubscription(userId, immediately);
+            res.status(200).json({
+                message: immediately
+                    ? "Subscription cancelled immediately"
+                    : "Subscription will cancel at period end",
+            });
         } catch (error) {
             next(error);
         }
@@ -59,7 +71,7 @@ export default class SubscriptionController {
 
     public createPaymentIntent = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const receiverId = req.user?.id!;
+            const receiverId = this.validateUser(req);
             const { senderId, messageId } = req.body;
             const clientSecret = await this.subscriptionService.createPaymentIntent(
                 senderId,
@@ -77,7 +89,7 @@ export default class SubscriptionController {
             const signature = req.headers["stripe-signature"] as string;
 
             await this.subscriptionService.handleWebHook(req.body, signature);
-            res.status(200);
+            res.status(200).json({ received: true });
         } catch (error) {
             next(error);
         }
@@ -85,7 +97,7 @@ export default class SubscriptionController {
 
     public getTransactionHistory = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const userId = req.user?.id!;
+            const userId = this.validateUser(req);
             const transactions = await this.subscriptionService.getTransactions(userId);
             res.status(200).json({ message: "Transactions Fetched Successfully", transactions });
         } catch (error) {

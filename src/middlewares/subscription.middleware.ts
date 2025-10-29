@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-import User from "../models/user.model.js";
 import { AppError } from "../libs/customError.js";
 import stripe from "../libs/stripe.js";
 import Subscription from "../models/subscription.model.js";
@@ -15,7 +14,7 @@ export const requireActiveSubscription = async (
         });
 
         if (!subscription) {
-            throw new AppError("Subscription Not Found", 403, "SUBSCRIPTION_MIDDLEWARE");
+            throw new AppError("Please subscribe our app", 403, "SUBSCRIPTION_MIDDLEWARE");
         }
 
         const validateSubscription = await stripe.subscriptions.retrieve(

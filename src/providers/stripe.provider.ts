@@ -1,17 +1,13 @@
 import Stripe from "stripe";
 import { AppError } from "../libs/customError.js";
-import Transaction, { type ITransaction } from "../models/transactions.model.js";
+import Transaction from "../models/transactions.model.js";
 import { Message } from "../models/chat.model.js";
 import stripe from "../libs/stripe.js";
 import type { IPaymentProvider } from "../interfaces/payment-provider.interface.js";
 
 export default class StripeProvider implements IPaymentProvider {
-    public constructEvent = async (body: string, signature: string) => {
-        return await stripe.webhooks.constructEvent(
-            body,
-            signature,
-            process.env.STRIPE_WEBHOOK_SECRET!
-        );
+    public constructEvent = (body: string, signature: string) => {
+        return stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
     };
     public createCustomer = async (email: string): Promise<string> => {
         const customer = await stripe.customers.create({ email });
@@ -66,24 +62,32 @@ export default class StripeProvider implements IPaymentProvider {
 
             latestInvoiceId = invoice.id;
 
-            // if (invoice.payment_intent) {
-            //     const paymentIntent = typeof invoice.payment_intent === 'string'
-            //         ? await stripe.paymentIntents.retrieve(invoice.payment_intent)
-            //         : invoice.payment_intent;
+            // Check if invoice has payment_intent that requires action
+            // @ts-expect-error - payment_intent exists when expanded
+            const paymentIntent = invoice.payment_intent;
+            if (paymentIntent && typeof paymentIntent === "object") {
+                // Only return client_secret if confirmation is needed
+                if (
+                    paymentIntent.status === "requires_payment_method" ||
+                    paymentIntent.status === "requires_confirmation"
+                ) {
+                    clientSecret = paymentIntent.client_secret;
+                }
+            }
+        }
 
-            //     // ALWAYS return client_secret if payment_intent exists
-            //     // The frontend will decide whether to confirm it
-            //     clientSecret = paymentIntent.client_secret || null;
-
-            //     console.log('Payment Intent Status:', paymentIntent.status);
-            //     console.log('Client Secret:', clientSecret);
-            // }
+        // Safe date handling with fallbacks
+        const firstItem = subscription.items.data[0];
+        if (!firstItem) {
+            throw new AppError("Subscription has no items", 400, "STRIPE_PROVIDER");
         }
 
         const currentPeriodStart = new Date(
-            subscription.items.data[0]?.current_period_start! * 1000
+            (firstItem.current_period_start || Date.now() / 1000) * 1000
         );
-        const currentPeriodEnd = new Date(subscription.items.data[0]?.current_period_end! * 1000);
+        const currentPeriodEnd = new Date(
+            (firstItem.current_period_end || Date.now() / 1000) * 1000
+        );
 
         return {
             subscriptionId: subscription.id,
@@ -99,16 +103,34 @@ export default class StripeProvider implements IPaymentProvider {
         customerId: string,
         paymentMethodId: string
     ): Promise<void> => {
-        await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
-        await stripe.customers.update(customerId, {
-            invoice_settings: { default_payment_method: paymentMethodId },
-        });
+        try {
+            // Check if payment method is already attached to avoid errors
+            const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+            if (paymentMethod.customer !== customerId) {
+                await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
+            }
+            await stripe.customers.update(customerId, {
+                invoice_settings: { default_payment_method: paymentMethodId },
+            });
+        } catch (error: unknown) {
+            const stripeError = error as { code?: string };
+            if (stripeError.code === "resource_already_exists") {
+                // Payment method already attached, just update customer
+                await stripe.customers.update(customerId, {
+                    invoice_settings: { default_payment_method: paymentMethodId },
+                });
+            } else {
+                throw error;
+            }
+        }
     };
 
     public cancelSubscription = async (subscriptionId: string, immediately = true) => {
         if (immediately) {
-            await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: false });
+            // Cancel immediately
+            await stripe.subscriptions.cancel(subscriptionId);
         } else {
+            // Cancel at period end
             await stripe.subscriptions.update(subscriptionId, { cancel_at_period_end: true });
         }
     };
@@ -116,18 +138,39 @@ export default class StripeProvider implements IPaymentProvider {
     public updateSubscription = async (
         subscriptionId: string,
         newPriceId: string
-    ): Promise<{ subscriptionId: string; clientSecret: string }> => {
+    ): Promise<{ subscriptionId: string; clientSecret: string | null }> => {
+        // First, get the current subscription to get the current item ID
+        const currentSubscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const currentItemId = currentSubscription.items.data[0]?.id;
+
+        if (!currentItemId) {
+            throw new AppError("Subscription has no items", 400, "STRIPE_PROVIDER");
+        }
+
+        // Update subscription with proper item modification
         const updated = await stripe.subscriptions.update(subscriptionId, {
-            items: [{ price: newPriceId }],
+            items: [
+                {
+                    id: currentItemId,
+                    price: newPriceId,
+                },
+            ],
+            proration_behavior: "create_prorations", // Handle prorations properly
             expand: ["latest_invoice.payment_intent"],
         });
 
-        let clientSecret: string = "";
+        let clientSecret: string | null = null;
         if (updated.latest_invoice && typeof updated.latest_invoice !== "string") {
-            const invoice = updated.latest_invoice as Stripe.Invoice & {
-                payment_intent: Stripe.PaymentIntent;
-            };
-            clientSecret = invoice.payment_intent.client_secret as string;
+            // @ts-expect-error - payment_intent exists when expanded
+            const paymentIntent = updated.latest_invoice.payment_intent;
+            if (paymentIntent && typeof paymentIntent === "object") {
+                if (
+                    paymentIntent.status === "requires_payment_method" ||
+                    paymentIntent.status === "requires_confirmation"
+                ) {
+                    clientSecret = paymentIntent.client_secret;
+                }
+            }
         }
 
         return { subscriptionId: updated.id, clientSecret };
@@ -136,22 +179,28 @@ export default class StripeProvider implements IPaymentProvider {
     public createPaymentIntent = async (
         customerId: string,
         price: number,
-        messageSenderId: string
+        destinationAccountId?: string
     ): Promise<{ clientSecret: string; paymentIntentId: string }> => {
-        const paymentIntent = await stripe.paymentIntents.create({
+        const paymentIntentData: Stripe.PaymentIntentCreateParams = {
             customer: customerId,
-            amount: Math.round(price * 10),
+            amount: Math.round(price * 100), // Convert to cents
             currency: "usd",
             automatic_payment_methods: {
                 enabled: true,
                 allow_redirects: "never",
             },
-            transfer_data: { destination: messageSenderId },
             metadata: {
-                senderId: messageSenderId,
-                receiverId: customerId,
+                customerId: customerId,
             },
-        });
+        };
+
+        // Only add transfer_data if destination account is provided and valid
+        if (destinationAccountId) {
+            paymentIntentData.transfer_data = { destination: destinationAccountId };
+            paymentIntentData.metadata!.destinationAccountId = destinationAccountId;
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create(paymentIntentData);
 
         return {
             clientSecret: paymentIntent.client_secret!,

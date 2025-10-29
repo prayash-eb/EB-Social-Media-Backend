@@ -15,7 +15,21 @@ export default class SubscriptionService {
         paymentMethodId: string
     ) => {
         const user = await User.findById(userId);
-        if (!user) throw new AppError("User not found", 404, "SUBSCRIPION_SERVICE");
+        if (!user) throw new AppError("User not found", 404, "SUBSCRIPTION_SERVICE");
+
+        // Check if user already has an active subscription
+        const existingSubscription = await Subscription.findOne({
+            userId,
+            status: { $in: ["active", "trialing", "incomplete"] },
+        });
+
+        if (existingSubscription) {
+            throw new AppError(
+                "User already has an active subscription",
+                409,
+                "SUBSCRIPTION_SERVICE"
+            );
+        }
 
         let customerId = user.stripeCustomerId;
         // Ensure customer exists
@@ -24,8 +38,14 @@ export default class SubscriptionService {
             user.stripeCustomerId = customerId;
             await user.save();
         }
+
         // Attach payment method & update customer
         await this.paymentProvider.attachPaymentMethod(customerId, paymentMethodId);
+
+        const priceId = process.env.STRIPE_PRICE_ID;
+        if (!priceId) {
+            throw new AppError("Stripe price ID not configured", 500, "SUBSCRIPTION_SERVICE");
+        }
 
         const {
             subscriptionId,
@@ -38,14 +58,14 @@ export default class SubscriptionService {
             customerId,
             userId.toString(),
             paymentMethodId,
-            process.env.STRIPE_PRICE_ID!
+            priceId
         );
 
         await Subscription.create({
             userId,
             stripeCustomerId: customerId,
             stripeSubscriptionId: subscriptionId,
-            priceId: process.env.STRIPE_PRICE_ID!,
+            priceId,
             currentPeriodStart,
             currentPeriodEnd,
             latestInvoiceId,
@@ -85,9 +105,11 @@ export default class SubscriptionService {
 
         // Update the Subscription document
         subscription.priceId = newPriceId;
-        subscription.stripeSubscriptionId = subscriptionId; // usually remains same, but Stripe may return updated
-
-        subscription.status = "incomplete"; // pending payment confirmation
+        // Note: Don't change status here - let webhooks handle status changes
+        // Only set to incomplete if clientSecret is returned (requires payment confirmation)
+        if (clientSecret) {
+            subscription.status = "incomplete";
+        }
         await subscription.save();
 
         return { subscriptionId, clientSecret };
@@ -104,9 +126,13 @@ export default class SubscriptionService {
             immediately
         );
 
-        // Update the subscription status locally
-        subscription.status = "canceled";
+        // Only update cancelAtPeriodEnd flag locally
+        // Let webhooks handle status updates to maintain consistency
         subscription.cancelAtPeriodEnd = !immediately;
+        if (immediately) {
+            // For immediate cancellation, we can update status as it's instant
+            subscription.status = "canceled";
+        }
         await subscription.save();
     };
 
@@ -119,15 +145,16 @@ export default class SubscriptionService {
         const messageReceiver = await User.findById(receiverId);
 
         if (!messageSender || !messageReceiver) {
-            throw new AppError("Sender or Receiver doesnot exist", 404, "STRIPE_SERVICE");
+            throw new AppError("Sender or Receiver does not exist", 404, "SUBSCRIPTION_SERVICE");
         }
+
         const message = await Message.findOne({
             _id: messageId,
             isLocked: true,
         });
 
         if (!message) {
-            throw new AppError("Message not found", 404, "STRIPE_SERVICE");
+            throw new AppError("Message not found", 404, "SUBSCRIPTION_SERVICE");
         }
 
         const transactionPending = await Transaction.findOne({
@@ -138,15 +165,24 @@ export default class SubscriptionService {
             throw new AppError(
                 "Transaction Pending. Wait for some time and try again if transaction fails.",
                 409,
-                "STRIPE_SERVICE"
+                "SUBSCRIPTION_SERVICE"
             );
         }
 
-        const customerId = await this.paymentProvider.createCustomer(messageReceiver.email);
+        // Use existing customer or create new one
+        let customerId = messageReceiver.stripeCustomerId;
+        if (!customerId) {
+            customerId = await this.paymentProvider.createCustomer(messageReceiver.email);
+            messageReceiver.stripeCustomerId = customerId;
+            await messageReceiver.save();
+        }
+
+        // Only pass destination account if sender has one configured
+        const destinationAccountId = messageSender.stripeAccountId || undefined;
         const { clientSecret, paymentIntentId } = await this.paymentProvider.createPaymentIntent(
             customerId,
             message.price!,
-            messageSender.stripeAccountId!
+            destinationAccountId
         );
 
         // Minimal transaction record
@@ -170,5 +206,15 @@ export default class SubscriptionService {
     public getTransactions = async (userId: mongoose.Types.ObjectId) => {
         const user = await User.findById(userId);
         if (!user) throw new AppError("User not found", 404, "SUBSCRIPTION_SERVICE");
+
+        // Get transactions where user is sender or receiver
+        const transactions = await Transaction.find({
+            $or: [{ senderId: userId }, { receiverId: userId }],
+        })
+            .populate("senderId", "name email")
+            .populate("receiverId", "name email")
+            .sort({ createdAt: -1 });
+
+        return transactions;
     };
 }

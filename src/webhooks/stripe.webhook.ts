@@ -10,7 +10,7 @@ export class StripeWebhookService {
     constructor(private stripeProvider: StripeProvider) {}
 
     public handleEvent = async (body: string, signature: string) => {
-        const event = await this.stripeProvider.constructEvent(body, signature);
+        const event = this.stripeProvider.constructEvent(body, signature);
 
         switch (event.type) {
             // ONE-OFF PAYMENTS
@@ -50,31 +50,42 @@ export class StripeWebhookService {
 
                 const existing = await Subscription.findOne({ stripeSubscriptionId: sub.id });
 
+                const firstItem = sub.items.data[0];
+                if (!firstItem) {
+                    console.error("Subscription has no items:", sub.id);
+                    break;
+                }
+
                 if (existing) {
                     existing.status = sub.status as ISubscription["status"];
                     existing.currentPeriodStart = new Date(
-                        sub.items.data[0]?.current_period_start! * 1000
+                        (firstItem.current_period_start || 0) * 1000
                     );
                     existing.currentPeriodEnd = new Date(
-                        sub.items.data[0]?.current_period_end! * 1000
+                        (firstItem.current_period_end || 0) * 1000
                     );
                     existing.cancelAtPeriodEnd = sub.cancel_at_period_end;
                     existing.latestInvoiceId = sub.latest_invoice as string;
                     await existing.save();
                 } else {
-                    await Subscription.create({
-                        userId: sub.metadata.userId, // make sure to set metadata.userId when creating subscription
-                        stripeCustomerId: sub.customer as string,
-                        stripeSubscriptionId: sub.id,
-                        priceId: sub.items.data[0]!.price.id,
-                        currentPeriodStart: new Date(
-                            sub.items.data[0]?.current_period_start! * 1000
-                        ),
-                        currentPeriodEnd: new Date(sub.items.data[0]?.current_period_end! * 1000),
-                        cancelAtPeriodEnd: sub.cancel_at_period_end,
-                        status: sub.status,
-                        latestInvoiceId: sub.latest_invoice as string,
-                    });
+                    // Use upsert to prevent race conditions
+                    await Subscription.findOneAndUpdate(
+                        { stripeSubscriptionId: sub.id },
+                        {
+                            userId: sub.metadata.userId,
+                            stripeCustomerId: sub.customer as string,
+                            stripeSubscriptionId: sub.id,
+                            priceId: firstItem.price.id,
+                            currentPeriodStart: new Date(
+                                (firstItem.current_period_start || 0) * 1000
+                            ),
+                            currentPeriodEnd: new Date((firstItem.current_period_end || 0) * 1000),
+                            cancelAtPeriodEnd: sub.cancel_at_period_end,
+                            status: sub.status,
+                            latestInvoiceId: sub.latest_invoice as string,
+                        },
+                        { upsert: true, new: true }
+                    );
                 }
                 break;
             }
@@ -84,15 +95,18 @@ export class StripeWebhookService {
                 console.log("WEBHOOK TRIGGERED", event.type);
 
                 const invoice = event.data.object as Stripe.Invoice;
+                // @ts-expect-error - subscription exists on invoice for subscription invoices
+                const subscriptionId = invoice.subscription as string | null;
 
                 const user = await User.findOne({ stripeCustomerId: invoice.customer });
                 if (!user) throw new AppError("User not found", 404, "STRIPE_WEBHOOK");
 
-                const tx = await Transaction.create({
+                // Create transaction record
+                await Transaction.create({
                     type: "subscription",
                     senderId: user._id,
                     stripeInvoiceId: invoice.id,
-                    stripeSubscriptionId: invoice.parent?.subscription_details?.subscription,
+                    stripeSubscriptionId: subscriptionId,
                     amount: invoice.amount_paid / 100,
                     currency: invoice.currency,
                     status: "succeeded",
@@ -101,18 +115,33 @@ export class StripeWebhookService {
                 // Update subscription period
                 const periodStart = invoice.lines.data[0]?.period?.start;
                 const periodEnd = invoice.lines.data[0]?.period?.end;
-                if (periodStart && periodEnd) {
+                if (periodStart && periodEnd && subscriptionId) {
                     await Subscription.findOneAndUpdate(
-                        {
-                            stripeSubscriptionId:
-                                invoice.parent?.subscription_details?.subscription,
-                        },
+                        { stripeSubscriptionId: subscriptionId },
                         {
                             status: "active",
                             currentPeriodStart: new Date(periodStart * 1000),
                             currentPeriodEnd: new Date(periodEnd * 1000),
                             latestInvoiceId: invoice.id,
                         }
+                    );
+                }
+
+                break;
+            }
+
+            // SUBSCRIPTION PAYMENT FAILED
+            case "invoice.payment_failed": {
+                console.log("WEBHOOK TRIGGERED", event.type);
+
+                const invoice = event.data.object as Stripe.Invoice;
+                // @ts-expect-error - subscription exists on invoice for subscription invoices
+                const subscriptionId = invoice.subscription as string | null;
+
+                if (subscriptionId) {
+                    await Subscription.findOneAndUpdate(
+                        { stripeSubscriptionId: subscriptionId },
+                        { status: "past_due" }
                     );
                 }
 
@@ -128,6 +157,24 @@ export class StripeWebhookService {
                     { stripeSubscriptionId: subscription.id },
                     { status: "canceled", cancelAtPeriodEnd: true }
                 );
+                break;
+            }
+
+            // INVOICE PAYMENT ACTION REQUIRED
+            case "invoice.payment_action_required": {
+                console.log("WEBHOOK TRIGGERED", event.type);
+
+                const invoice = event.data.object as Stripe.Invoice;
+                //@ts-expect-error - subscription exists on invoice for subscription invoices
+                // test
+                const subscriptionId = invoice.subscription as string | null;
+
+                if (subscriptionId) {
+                    await Subscription.findOneAndUpdate(
+                        { stripeSubscriptionId: subscriptionId },
+                        { status: "incomplete" }
+                    );
+                }
                 break;
             }
 
