@@ -29,7 +29,6 @@ export interface IUser extends Document {
     stripeCustomerId?: string;
     stripeAccountId?: string;
     subscriptionId?: string;
-    subscriptionStatus: string;
     emailVerificationToken: string | undefined;
     emailVerificationTokenExpiry: Date | undefined;
 }
