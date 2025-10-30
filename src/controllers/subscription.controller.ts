@@ -4,7 +4,6 @@ import { AppError } from "../libs/customError.js";
 import mongoose from "mongoose";
 export default class SubscriptionController {
     constructor(private subscriptionService: SubscriptionService) {}
-
     private validateUser(req: Request): mongoose.Types.ObjectId {
         if (!req.user?.id) {
             throw new AppError("User not authenticated", 401, "SUBSCRIPTION_CONTROLLER");
