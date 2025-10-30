@@ -17,10 +17,10 @@ export const requireActiveSubscription = async (
             throw new AppError("Please subscribe our app", 403, "SUBSCRIPTION_MIDDLEWARE");
         }
 
-        const validateSubscription = await stripe.subscriptions.retrieve(
+        const validSubscription = await stripe.subscriptions.retrieve(
             subscription.stripeSubscriptionId
         );
-        if (!["active", "trialing"].includes(validateSubscription.status)) {
+        if (!["active", "trialing"].includes(validSubscription.status)) {
             throw new AppError(
                 "Subscription is inactive or expired",
                 403,
