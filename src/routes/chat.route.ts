@@ -14,37 +14,36 @@ const chatRouter: Router = Router();
 const chatService = new ChatService();
 const chatController = new ChatController(chatService);
 
+
+// all routes are authenticated
+chatRouter.use(AuthenticateAccessToken)
+
 chatRouter.post(
     "/send-message",
-    AuthenticateAccessToken,
     validateBody(sendMessageSchema),
     chatController.sendMessage
 );
 chatRouter.post(
     "/send-image",
-    AuthenticateAccessToken,
     createRemoteImageUploader({ folder: "inbox_images" }),
     validateBody(sendImageMessageSchema),
     chatController.sendImageMessage
 );
 
-chatRouter.get("/conversations", AuthenticateAccessToken, chatController.getConversationsList);
+chatRouter.get("/conversations", chatController.getConversationsList);
 chatRouter.get(
     "/messages/:conversationId",
-    AuthenticateAccessToken,
     validateParams(conversationIdSchema),
     chatController.getConversationMessages
 );
 chatRouter.patch(
     "/mark-read/:conversationId",
-    AuthenticateAccessToken,
     validateParams(conversationIdSchema),
     chatController.markAsRead
 );
-chatRouter.get("/unread-messages", AuthenticateAccessToken, chatController.getUnreadMessages);
+chatRouter.get("/unread-messages", chatController.getUnreadMessages);
 chatRouter.get(
     "/unread-messages-count",
-    AuthenticateAccessToken,
     chatController.getUnreadMessagesCount
 );
 

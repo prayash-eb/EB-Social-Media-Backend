@@ -158,7 +158,9 @@ export default class ChatService {
             .populate("receiver", "name");
 
         const filteredMessages = messages.map((message) => {
-            if (message.isLocked) {
+
+            if (message.isLocked && message.receiver.equals(userId)) {
+
                 return {
                     _id: message._id,
                     isPaidContent: message.isPaidContent,

@@ -9,9 +9,15 @@ export default class StripeProvider implements IPaymentProvider {
     public constructEvent = (body: string, signature: string) => {
         return stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!);
     };
-    public createCustomer = async (email: string): Promise<string> => {
+    public createCustomerAndSetupIntent = async (email: string): Promise<{ clientSecret: string | null, customerId: string }> => {
         const customer = await stripe.customers.create({ email });
-        return customer.id;
+        const setupIntent = await stripe.setupIntents.create({
+            customer: customer?.id,
+            // Crucial: allows this payment method to be used for future charges (subscription renewals, content purchases)
+            usage: 'off_session',
+        });
+
+        return { clientSecret: setupIntent.client_secret, customerId: customer?.id }
     };
     public createSubscription = async (
         customerId: string,
@@ -56,8 +62,8 @@ export default class StripeProvider implements IPaymentProvider {
             const invoice =
                 typeof subscription.latest_invoice === "string"
                     ? await stripe.invoices.retrieve(subscription.latest_invoice, {
-                          expand: ["payment_intent"],
-                      })
+                        expand: ["payment_intent"],
+                    })
                     : subscription.latest_invoice;
 
             latestInvoiceId = invoice.id;

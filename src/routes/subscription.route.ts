@@ -12,6 +12,10 @@ const stripeProvider = new StripeProvider();
 const subscriptionService = new SubscriptionService(stripeProvider);
 const subscriptionController = new SubscriptionController(subscriptionService);
 
+
+subscriptionRouter.post("/create-customer", AuthenticateAccessToken, subscriptionController.createUserCustomer)
+
+
 subscriptionRouter.post(
     "/create-sub",
     AuthenticateAccessToken,

@@ -3,13 +3,23 @@ import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../libs/customError.js";
 import mongoose from "mongoose";
 export default class SubscriptionController {
-    constructor(private subscriptionService: SubscriptionService) {}
+    constructor(private subscriptionService: SubscriptionService) { }
     private validateUser(req: Request): mongoose.Types.ObjectId {
         if (!req.user?.id) {
             throw new AppError("User not authenticated", 401, "SUBSCRIPTION_CONTROLLER");
         }
         return req.user.id;
     }
+
+    public createUserCustomer = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const userId = this.validateUser(req);
+            const { customerId, clientSecret } = await this.subscriptionService.createCustomerAndSetupIntent(userId);
+            res.status(200).json({ message: "Customer Created Successfully", customerId, clientSecret });
+        } catch (error) {
+            next(error);
+        }
+    };
 
     public createUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -56,8 +66,8 @@ export default class SubscriptionController {
     public cancelUserSubscription = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = this.validateUser(req);
-            const { immediately = true } = req.body;
-            await this.subscriptionService.cancelSubscription(userId, immediately);
+            const { immediately } = req.body;
+            await this.subscriptionService.cancelSubscription(userId, Boolean(immediately));
             res.status(200).json({
                 message: immediately
                     ? "Subscription cancelled immediately"

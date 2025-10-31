@@ -9,7 +9,22 @@ import { StripeWebhookService } from "../webhooks/stripe.webhook.js";
 import StripeProvider from "../providers/stripe.provider.js";
 
 export default class SubscriptionService {
-    constructor(private paymentProvider: IPaymentProvider) {}
+    constructor(private paymentProvider: IPaymentProvider) { }
+
+    public createCustomerAndSetupIntent = async (userId: mongoose.Types.ObjectId) => {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new AppError("User not Found", 400, "SUBSCRIPTION_SERVICE");
+        }
+        if (user.stripeCustomerId) {
+            throw new AppError("Customer Already Exist", 400, "SUBSCRIPTION_SERVICE")
+        }
+        const { clientSecret, customerId } = await this.paymentProvider.createCustomerAndSetupIntent(user?.email!);
+        user.stripeCustomerId = customerId;
+        await user.save()
+        return { clientSecret, customerId }
+    };
+
     public createSubscription = async (
         userId: mongoose.Types.ObjectId,
         paymentMethodId: string
@@ -32,11 +47,14 @@ export default class SubscriptionService {
         }
 
         let customerId = user.stripeCustomerId;
+
+        console.log(customerId);
         // Ensure customer exists
         if (!customerId) {
-            customerId = await this.paymentProvider.createCustomer(user.email);
-            user.stripeCustomerId = customerId;
+            let { customerId: c_id, clientSecret } = await this.paymentProvider.createCustomerAndSetupIntent(user.email);
+            user.stripeCustomerId = c_id;
             await user.save();
+            customerId = c_id;
         }
 
         // Attach payment method & update customer
@@ -172,9 +190,11 @@ export default class SubscriptionService {
         // Use existing customer or create new one
         let customerId = messageReceiver.stripeCustomerId;
         if (!customerId) {
-            customerId = await this.paymentProvider.createCustomer(messageReceiver.email);
-            messageReceiver.stripeCustomerId = customerId;
+            let { customerId: c_id, clientSecret } = await this.paymentProvider.createCustomerAndSetupIntent(messageReceiver.email);
+            messageReceiver.stripeCustomerId = c_id;
+            customerId = c_id;
             await messageReceiver.save();
+
         }
 
         // Only pass destination account if sender has one configured

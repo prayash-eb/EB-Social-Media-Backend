@@ -18,70 +18,64 @@ import {
     createLocalImageUploader,
     createRemoteImageUploader,
 } from "../middlewares/upload.middleware.js";
+import { requireActiveSubscription } from "../middlewares/subscription.middleware.js";
 
 const postRouter = Router();
 const postService = new PostService();
 const postController = new PostController(postService);
 
+postRouter.use(AuthenticateAccessToken);
+
 postRouter.post(
     "/create",
-    AuthenticateAccessToken,
+    requireActiveSubscription,
     createRemoteImageUploader({ folder: "post_images" }),
     validateBody(createPostSchema),
     postController.createUserPost
 );
 postRouter.post(
     "/edit/:id",
-    AuthenticateAccessToken,
     createRemoteImageUploader({ folder: "post_images" }),
     validateBody(editPostSchema),
     postController.editUserPost
 );
 postRouter.delete(
     "/delete/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     postController.deleteUserPost
 );
 postRouter.get(
     "/all",
-    AuthenticateAccessToken,
     validateQuery(getPostsQuerySchema),
     postController.getUserPosts
 );
 postRouter.patch(
     "/like/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     postController.likePost
 );
 postRouter.patch(
     "/unlike/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     postController.unLikePost
 );
 postRouter.patch(
     "/comment/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     postController.commentPost
 );
 postRouter.delete(
     "/delete-comment/:postId/:commentId",
-    AuthenticateAccessToken,
     validateParams(deleteCommentParamSchema),
     postController.deleteComment
 );
 postRouter.get(
     "/feeds",
-    AuthenticateAccessToken,
     validateQuery(getPostsQuerySchema),
     postController.listUserFeeds
 );
 postRouter.get(
     "/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     postController.getUserPost
 );

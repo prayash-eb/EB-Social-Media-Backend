@@ -1,5 +1,5 @@
 export interface IPaymentProvider {
-    createCustomer(email: string): Promise<string>;
+    createCustomerAndSetupIntent(email: string): Promise<{ clientSecret: string | null, customerId: string }>;
     attachPaymentMethod(customerId: string, paymentMethodId: string): Promise<void>;
     updateSubscription(
         subscriptionId: string,

@@ -10,19 +10,19 @@ const followRouter = Router();
 const followService = new FollowService();
 const followController = new FollowController(followService);
 
+followRouter.use(AuthenticateAccessToken)
+
 followRouter.patch(
     "/follow/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     followController.followUser
 );
 followRouter.patch(
     "/unfollow/:id",
-    AuthenticateAccessToken,
     validateParams(paramIdSchema),
     followController.unfollowUser
 );
-followRouter.get("/followers/me", AuthenticateAccessToken, followController.getUserFollowers);
-followRouter.get("/followings/me", AuthenticateAccessToken, followController.getUserFollowing);
+followRouter.get("/followers/me", followController.getUserFollowers);
+followRouter.get("/followings/me", followController.getUserFollowing);
 
 export default followRouter;
